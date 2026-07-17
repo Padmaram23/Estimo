@@ -17,13 +17,16 @@ export async function GET() {
                 SELECT COALESCE(
                   json_agg(
                     json_build_object(
-                      'id',            p.id,
-                      'name',          p.name,
-                      'description',   p.description,
-                      'price',         p.price,
-                      'billing_cycle', p.billing_cycle,
-                      'features',      p.features,
-                      'is_popular',    p.is_popular
+                      'id',                   p.id,
+                      'name',                 p.name,
+                      'description',          p.description,
+                      'price',                p.price,
+                      'billing_cycle',        p.billing_cycle,
+                      'features',             p.features,
+                      'is_popular',           p.is_popular,
+                      'is_token_based',       p.is_token_based,
+                      'price_input_per_1m',   p.price_input_per_1m,
+                      'price_output_per_1m',  p.price_output_per_1m
                     )
                     ORDER BY p.price
                   ),
