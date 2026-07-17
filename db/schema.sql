@@ -20,17 +20,21 @@ CREATE TABLE IF NOT EXISTS tools (
 
 -- Pricing plans for each tool
 CREATE TABLE IF NOT EXISTS plans (
-  id           SERIAL PRIMARY KEY,
-  tool_id      INTEGER NOT NULL REFERENCES tools(id) ON DELETE CASCADE,
-  name         VARCHAR(255) NOT NULL,
-  description  TEXT,
-  price        NUMERIC(10, 2) NOT NULL DEFAULT 0,
-  billing_cycle VARCHAR(20) NOT NULL DEFAULT 'monthly', -- monthly | yearly | one-time
-  features     TEXT[],                          -- list of features included in this plan
-  is_popular   BOOLEAN DEFAULT FALSE,           -- highlight a recommended plan
-  created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  is_deleted   BOOLEAN DEFAULT FALSE,
-  deleted_at   TIMESTAMP
+  id                    SERIAL PRIMARY KEY,
+  tool_id               INTEGER NOT NULL REFERENCES tools(id) ON DELETE CASCADE,
+  name                  VARCHAR(255) NOT NULL,
+  description           TEXT,
+  price                 NUMERIC(10, 2) NOT NULL DEFAULT 0,  -- flat monthly price (0 for token-based)
+  billing_cycle         VARCHAR(20) NOT NULL DEFAULT 'monthly',
+  features              TEXT[],
+  is_popular            BOOLEAN DEFAULT FALSE,
+  -- Token-based pricing (for Foundation Models / Embedding Models)
+  is_token_based        BOOLEAN DEFAULT FALSE,
+  price_input_per_1m    NUMERIC(12, 6),   -- USD per 1M input tokens
+  price_output_per_1m   NUMERIC(12, 6),   -- USD per 1M output tokens
+  created_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  is_deleted            BOOLEAN DEFAULT FALSE,
+  deleted_at            TIMESTAMP
 );
 
 -- Indexes
@@ -73,3 +77,19 @@ CREATE TABLE IF NOT EXISTS tool_self_hosting (
 
 CREATE INDEX IF NOT EXISTS idx_cloud_instances_provider ON cloud_instances(provider_id);
 CREATE INDEX IF NOT EXISTS idx_tool_self_hosting_tool   ON tool_self_hosting(tool_id);
+
+-- Projects
+CREATE TABLE IF NOT EXISTS projects (
+  id          SERIAL PRIMARY KEY,
+  name        VARCHAR(255) NOT NULL,
+  description TEXT,
+  diagram     JSONB,        -- stores ReactFlow nodes + edges
+  selections  JSONB,        -- stores selected tools/plans snapshot
+  total_monthly NUMERIC(10,2) DEFAULT 0,
+  created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  is_deleted  BOOLEAN DEFAULT FALSE,
+  deleted_at  TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_projects_is_deleted ON projects(is_deleted);

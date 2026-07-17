@@ -276,165 +276,156 @@ BEGIN;
 -- OpenAI
 -- ==========================
 
-INSERT INTO plans (tool_id, name, description, price, billing_cycle)
-SELECT id, 'GPT-5.5',
-       'GPT-5.5 model',
-       35.00,
-       'monthly'
-FROM tools
-WHERE name = 'OpenAI (GPT-4.1, o3, o4)';
-
-INSERT INTO plans (tool_id, name, description, price, billing_cycle)
-SELECT id, 'GPT-5.5 Pro',
-       'GPT-5.5 Pro model',
-       210.00,
-       'monthly'
-FROM tools
-WHERE name = 'OpenAI (GPT-4.1, o3, o4)';
-
-INSERT INTO plans (tool_id, name, description, price, billing_cycle)
-SELECT id, 'GPT-5.4',
-       'GPT-5.4 model',
-       17.50,
-       'monthly'
-FROM tools
-WHERE name = 'OpenAI (GPT-4.1, o3, o4)';
-
-INSERT INTO plans (tool_id, name, description, price, billing_cycle)
-SELECT id, 'GPT-5.4 Mini',
-       'GPT-5.4 Mini model',
-       5.25,
-       'monthly'
-FROM tools
-WHERE name = 'OpenAI (GPT-4.1, o3, o4)';
-
-INSERT INTO plans (tool_id, name, description, price, billing_cycle)
-SELECT id, 'GPT-5.4 Nano',
-       'GPT-5.4 Nano model',
-       1.45,
-       'monthly'
-FROM tools
-WHERE name = 'OpenAI (GPT-4.1, o3, o4)';
-
-INSERT INTO plans (tool_id, name, description, price, billing_cycle)
-SELECT id, 'GPT-5.4 Pro',
-       'GPT-5.4 Pro model',
-       210.00,
-       'monthly'
-FROM tools
-WHERE name = 'OpenAI (GPT-4.1, o3, o4)';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
+SELECT id, 'GPT-4.1',        'Latest GPT-4.1 flagship model',          0, 'monthly', TRUE,  2.00,  8.00,  FALSE FROM tools WHERE name = 'OpenAI (GPT-4.1, o3, o4)';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
+SELECT id, 'GPT-4.1 Mini',   'Lightweight and fast GPT-4.1 variant',   0, 'monthly', TRUE,  0.40,  1.60,  TRUE  FROM tools WHERE name = 'OpenAI (GPT-4.1, o3, o4)';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
+SELECT id, 'GPT-4.1 Nano',   'Cheapest and fastest GPT-4.1 variant',   0, 'monthly', TRUE,  0.10,  0.40   FROM tools WHERE name = 'OpenAI (GPT-4.1, o3, o4)';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
+SELECT id, 'o3',             'Advanced reasoning model',                0, 'monthly', TRUE, 10.00, 40.00   FROM tools WHERE name = 'OpenAI (GPT-4.1, o3, o4)';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
+SELECT id, 'o4-mini',        'Fast reasoning at lower cost',            0, 'monthly', TRUE,  1.10,  4.40   FROM tools WHERE name = 'OpenAI (GPT-4.1, o3, o4)';
 
 -- ==========================
 -- Claude
 -- ==========================
 
-INSERT INTO plans (tool_id, name, description, price)
-SELECT id,'Claude Fable 5','Claude Fable 5',60
-FROM tools WHERE name='Claude';
-
-INSERT INTO plans (tool_id, name, description, price)
-SELECT id,'Claude Opus 4.8','Claude Opus 4.8',30
-FROM tools WHERE name='Claude';
-
-INSERT INTO plans (tool_id, name, description, price)
-SELECT id,'Claude Sonnet 4.6','Claude Sonnet 4.6',18
-FROM tools WHERE name='Claude';
-
-INSERT INTO plans (tool_id, name, description, price)
-SELECT id,'Claude Haiku 4.5','Claude Haiku 4.5',6
-FROM tools WHERE name='Claude';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
+SELECT id, 'Claude Opus 4',   'Most powerful Claude model',             0, 'monthly', TRUE, 15.00, 75.00,  FALSE FROM tools WHERE name = 'Claude';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
+SELECT id, 'Claude Sonnet 4', 'Best balance of speed and intelligence', 0, 'monthly', TRUE,  3.00, 15.00,  TRUE  FROM tools WHERE name = 'Claude';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
+SELECT id, 'Claude Haiku 3.5','Fastest and most compact Claude',        0, 'monthly', TRUE,  0.80,  4.00   FROM tools WHERE name = 'Claude';
 
 -- ==========================
 -- Gemini
 -- ==========================
 
-INSERT INTO plans (tool_id,name,description,price)
-SELECT id,'Gemini 3.1 Pro','Gemini 3.1 Pro',14
-FROM tools WHERE name='Gemini';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
+SELECT id, 'Gemini 2.5 Pro',   'Most capable Gemini model',            0, 'monthly', TRUE,  1.25,  10.00, TRUE  FROM tools WHERE name = 'Gemini';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
+SELECT id, 'Gemini 2.5 Flash', 'Fast and efficient Gemini model',      0, 'monthly', TRUE,  0.075,  0.30   FROM tools WHERE name = 'Gemini';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
+SELECT id, 'Gemini 2.0 Flash', 'Previous generation flash model',      0, 'monthly', TRUE,  0.10,   0.40   FROM tools WHERE name = 'Gemini';
 
-INSERT INTO plans (tool_id,name,description,price)
-SELECT id,'Gemini 3.0','Gemini 3.0',5
-FROM tools WHERE name='Gemini';
+-- ==========================
+-- Cohere
+-- ==========================
 
-INSERT INTO plans (tool_id,name,description,price)
-SELECT id,'Gemini 2.5 Pro','Gemini 2.5 Pro',6.25
-FROM tools WHERE name='Gemini';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
+SELECT id, 'Command R+',  'Cohere flagship for enterprise RAG',         0, 'monthly', TRUE,  2.50,  10.00, TRUE  FROM tools WHERE name = 'Cohere';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
+SELECT id, 'Command R',   'Balanced model for RAG and agents',          0, 'monthly', TRUE,  0.15,   0.60  FROM tools WHERE name = 'Cohere';
 
-INSERT INTO plans (tool_id,name,description,price)
-SELECT id,'Gemini 2.5 Flash','Gemini 2.5 Flash',0.38
-FROM tools WHERE name='Gemini';
+-- ==========================
+-- Mistral API
+-- ==========================
+
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
+SELECT id, 'Mistral Large', 'Top-tier Mistral frontier model',          0, 'monthly', TRUE,  2.00,  6.00,  TRUE  FROM tools WHERE name = 'Mistral API';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
+SELECT id, 'Mistral Small', 'Efficient model for simple tasks',         0, 'monthly', TRUE,  0.10,  0.30   FROM tools WHERE name = 'Mistral API';
+
+-- ==========================
+-- Grok
+-- ==========================
+
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
+SELECT id, 'Grok 3',        'xAI flagship reasoning model',             0, 'monthly', TRUE,  3.00, 15.00,  TRUE  FROM tools WHERE name = 'Grok';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
+SELECT id, 'Grok 3 Mini',   'Fast and affordable Grok model',           0, 'monthly', TRUE,  0.30,  0.50   FROM tools WHERE name = 'Grok';
 
 -- ==========================
 -- Llama
 -- ==========================
 
-INSERT INTO plans (tool_id,name,description,price)
-SELECT id,'Llama 4 Scout (Meta)','Meta Hosted',0.38
-FROM tools WHERE name='Llama';
-
-INSERT INTO plans (tool_id,name,description,price)
-SELECT id,'Llama 3.3 70B (DeepInfra)','DeepInfra',0.63
-FROM tools WHERE name='Llama';
-
-INSERT INTO plans (tool_id,name,description,price)
-SELECT id,'Llama 3.3 70B (Groq)','Groq',1.38
-FROM tools WHERE name='Llama';
-
-INSERT INTO plans (tool_id,name,description,price)
-SELECT id,'Llama 3.3 70B (Together AI)','Together AI',1.76
-FROM tools WHERE name='Llama';
-
-INSERT INTO plans (tool_id,name,description,price)
-SELECT id,'Llama 3.3 70B (Fireworks)','Fireworks AI',1.80
-FROM tools WHERE name='Llama';
-
-INSERT INTO plans (tool_id,name,description,price)
-SELECT id,'Llama 3.3 70B (Replicate)','Replicate',3.40
-FROM tools WHERE name='Llama';
-
-INSERT INTO plans (tool_id,name,description,price)
-SELECT id,'Llama 3.1 405B (DeepInfra)','DeepInfra',1.60
-FROM tools WHERE name='Llama';
-
-INSERT INTO plans (tool_id,name,description,price)
-SELECT id,'Llama 3.1 405B (Fireworks)','Fireworks AI',6.00
-FROM tools WHERE name='Llama';
-
-INSERT INTO plans (tool_id,name,description,price)
-SELECT id,'Llama 3.1 405B (Together)','Together AI',7.00
-FROM tools WHERE name='Llama';
-
-INSERT INTO plans (tool_id,name,description,price)
-SELECT id,'Llama 3.1 405B (Replicate)','Replicate',19.00
-FROM tools WHERE name='Llama';
-
-INSERT INTO plans (tool_id,name,description,price)
-SELECT id,'Llama 3.1 8B (Groq)','Groq',0.13
-FROM tools WHERE name='Llama';
-
-INSERT INTO plans (tool_id,name,description,price)
-SELECT id,'Llama 3.1 8B (DeepInfra)','DeepInfra',0.13
-FROM tools WHERE name='Llama';
-
-INSERT INTO plans (tool_id,name,description,price)
-SELECT id,'Llama 3.1 8B (Together)','Together AI',0.36
-FROM tools WHERE name='Llama';
-
-INSERT INTO plans (tool_id,name,description,price)
-SELECT id,'Llama 3.1 8B (Fireworks)','Fireworks AI',0.40
-FROM tools WHERE name='Llama';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
+SELECT id, 'Llama 4 Scout (Meta)',       'Meta hosted Llama 4 Scout',   0, 'monthly', TRUE,  0.17,  0.17, FALSE FROM tools WHERE name = 'Llama';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
+SELECT id, 'Llama 3.3 70B (Groq)',       'Via Groq inference',          0, 'monthly', TRUE,  0.59,  0.79, TRUE  FROM tools WHERE name = 'Llama';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
+SELECT id, 'Llama 3.3 70B (Together)',   'Via Together AI',             0, 'monthly', TRUE,  0.88,  0.88  FROM tools WHERE name = 'Llama';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
+SELECT id, 'Llama 3.1 405B (Together)',  'Via Together AI',             0, 'monthly', TRUE,  3.50,  3.50  FROM tools WHERE name = 'Llama';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
+SELECT id, 'Llama 3.1 8B (Groq)',        'Ultra-fast 8B via Groq',      0, 'monthly', TRUE,  0.05,  0.08  FROM tools WHERE name = 'Llama';
 
 -- ==========================
 -- DeepSeek
 -- ==========================
 
-INSERT INTO plans (tool_id,name,description,price)
-SELECT id,'DeepSeek V4 Flash','Flash Model',0.42
-FROM tools WHERE name='DeepSeek';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
+SELECT id, 'DeepSeek V3',      'Flagship DeepSeek model',               0, 'monthly', TRUE,  0.27,  1.10, TRUE  FROM tools WHERE name = 'DeepSeek';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
+SELECT id, 'DeepSeek R1',      'Reasoning-focused DeepSeek model',      0, 'monthly', TRUE,  0.55,  2.19  FROM tools WHERE name = 'DeepSeek';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
+SELECT id, 'DeepSeek V3 Flash','Low-cost fast variant',                  0, 'monthly', TRUE,  0.07,  0.28  FROM tools WHERE name = 'DeepSeek';
 
-INSERT INTO plans (tool_id,name,description,price)
-SELECT id,'DeepSeek V4 Pro','Pro Model',1.31
-FROM tools WHERE name='DeepSeek';
+-- ==========================
+-- Qwen
+-- ==========================
+
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
+SELECT id, 'Qwen3 235B',  'Alibaba flagship Qwen3 model',               0, 'monthly', TRUE,  0.40,  1.20, TRUE  FROM tools WHERE name = 'Qwen';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
+SELECT id, 'Qwen3 30B',   'Mid-size Qwen3 model',                       0, 'monthly', TRUE,  0.10,  0.30  FROM tools WHERE name = 'Qwen';
+
+-- ==========================
+-- Phi
+-- ==========================
+
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
+SELECT id, 'Phi-4',       'Microsoft Phi-4 14B model',                  0, 'monthly', TRUE,  0.07,  0.14, TRUE  FROM tools WHERE name = 'Phi';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
+SELECT id, 'Phi-4 Mini',  'Compact Phi-4 3.8B model',                   0, 'monthly', TRUE,  0.04,  0.07  FROM tools WHERE name = 'Phi';
+
+-- ==========================
+-- Gemma
+-- ==========================
+
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
+SELECT id, 'Gemma 3 27B', 'Google Gemma 3 27B via Groq',                0, 'monthly', TRUE,  0.20,  0.20, TRUE  FROM tools WHERE name = 'Gemma';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
+SELECT id, 'Gemma 3 12B', 'Google Gemma 3 12B via Groq',                0, 'monthly', TRUE,  0.10,  0.10  FROM tools WHERE name = 'Gemma';
+
+-- ==========================
+-- Mistral (OSS)
+-- ==========================
+
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
+SELECT id, 'Mistral 7B (Groq)',  'Mistral 7B via Groq',                 0, 'monthly', TRUE,  0.05,  0.05, TRUE  FROM tools WHERE name = 'Mistral';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
+SELECT id, 'Mixtral 8x7B',       'Mixture-of-experts Mixtral',          0, 'monthly', TRUE,  0.24,  0.24  FROM tools WHERE name = 'Mistral';
+
+-- ==========================
+-- Falcon
+-- ==========================
+
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
+SELECT id, 'Falcon 180B', 'TII Falcon 180B via Together AI',            0, 'monthly', TRUE,  5.00,  5.00, TRUE  FROM tools WHERE name = 'Falcon';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
+SELECT id, 'Falcon 40B',  'TII Falcon 40B via Together AI',             0, 'monthly', TRUE,  1.00,  1.00  FROM tools WHERE name = 'Falcon';
+
+-- ==========================
+-- Embedding Models (also token-based)
+-- ==========================
+
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
+SELECT id, 'text-embedding-3-large', 'OpenAI large embedding model',    0, 'monthly', TRUE, 0.13, 0, TRUE  FROM tools WHERE name = 'OpenAI Embeddings';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
+SELECT id, 'text-embedding-3-small', 'OpenAI small embedding model',    0, 'monthly', TRUE, 0.02, 0  FROM tools WHERE name = 'OpenAI Embeddings';
+
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
+SELECT id, 'voyage-3-large', 'Voyage AI flagship embedding',            0, 'monthly', TRUE, 0.06, 0, TRUE  FROM tools WHERE name = 'Voyage AI';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
+SELECT id, 'voyage-3',       'Voyage AI standard embedding',            0, 'monthly', TRUE, 0.02, 0  FROM tools WHERE name = 'Voyage AI';
+
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
+SELECT id, 'embed-v4.0', 'Cohere multilingual embeddings',              0, 'monthly', TRUE, 0.10, 0, TRUE  FROM tools WHERE name = 'Cohere Embed';
+
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
+SELECT id, 'jina-embeddings-v3', 'Jina AI multilingual embedding',      0, 'monthly', TRUE, 0.02, 0, TRUE  FROM tools WHERE name = 'Jina AI';
 
 -- ==========================
 -- LangGraph

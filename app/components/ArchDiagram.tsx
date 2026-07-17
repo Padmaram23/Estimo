@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useImperativeHandle, forwardRef } from "react";
 import {
   ReactFlow,
   Background,
@@ -29,7 +29,14 @@ import {
 /* ─── types ─────────────────────────────────────────────────── */
 interface Tool { id: number; name: string; price: number }
 interface SelectedTool extends Tool { categoryName: string }
-interface Props { selected: SelectedTool[] }
+interface Props {
+  selected: SelectedTool[];
+  initialEdges?: Edge[];
+}
+
+export interface ArchDiagramHandle {
+  getDiagram: () => { nodes: Node[]; edges: Edge[] };
+}
 type Direction = "LR" | "TB";
 type EdgeStyle = "default" | "straight" | "step" | "smoothstep";
 
@@ -93,7 +100,20 @@ function CategoryNode({ data }: NodeProps) {
   );
 }
 
-const nodeTypes = { toolNode: ToolNode, categoryNode: CategoryNode };
+/* ─── hub node ──────────────────────────────────────────────── */
+function HubNode({ data }: NodeProps) {
+  const d = data as { count: number };
+  return (
+    <div style={{ textAlign: "center", padding: "6px 10px" }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: "#c7d2fe" }}>Your Stack</div>
+      <div style={{ fontSize: 9, color: "#818cf8" }}>
+        {d.count} tool{d.count !== 1 ? "s" : ""}
+      </div>
+    </div>
+  );
+}
+
+const nodeTypes = { toolNode: ToolNode, categoryNode: CategoryNode, hubNode: HubNode };
 
 /* ─── layout constants ───────────────────────────────────────── */
 const TOOL_W = 148;
@@ -152,18 +172,9 @@ function buildCategoryNodes(
 function hubNode(count: number): Node {
   return {
     id: "hub",
-    type: "default",
+    type: "hubNode",
     position: { x: 40, y: 40 },
-    data: {
-      label: (
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: "#c7d2fe" }}>Your Stack</div>
-          <div style={{ fontSize: 9, color: "#818cf8" }}>
-            {count} tool{count !== 1 ? "s" : ""}
-          </div>
-        </div>
-      ),
-    },
+    data: { count },
     style: {
       width: HUB_W, height: HUB_H,
       background: "#312e81", border: "1.5px solid #6366f1",
@@ -325,11 +336,17 @@ function EdgePanel({ edge, onUpdate, onDelete, onClose }: EdgePanelProps) {
 }
 
 /* ─── main component ─────────────────────────────────────────── */
-export default function ArchDiagram({ selected }: Props) {
+const ArchDiagram = forwardRef<ArchDiagramHandle, Props>(function ArchDiagram(
+  { selected, initialEdges }, ref
+) {
   const [dir, setDir] = useState<Direction>("LR");
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initialEdges ?? []);
   const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    getDiagram: () => ({ nodes, edges }),
+  }), [nodes, edges]);
 
   // Track which category names and tool ids are currently in the diagram
   const prevCatNames = useRef<Set<string>>(new Set());
@@ -384,14 +401,7 @@ export default function ArchDiagram({ selected }: Props) {
       // Update hub label count
       return ns.map((n) =>
         n.id === "hub"
-          ? { ...n, data: { ...n.data, label: (
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#c7d2fe" }}>Your Stack</div>
-                <div style={{ fontSize: 9, color: "#818cf8" }}>
-                  {selected.length} tool{selected.length !== 1 ? "s" : ""}
-                </div>
-              </div>
-            )}}
+          ? { ...n, data: { count: selected.length } }
           : n
       );
     });
@@ -437,7 +447,13 @@ export default function ArchDiagram({ selected }: Props) {
     }
 
     if (newNodes.length > 0) setNodes((ns) => [...ns, ...newNodes]);
-    if (newEdges.length > 0) setEdges((es) => [...es, ...newEdges]);
+    if (newEdges.length > 0) setEdges((es) => {
+      // On first load, merge saved edges with auto-generated hub edges
+      // (initialEdges already seeded via useEdgesState, so just append new hub edges)
+      const existingIds = new Set(es.map((e) => e.id));
+      const fresh = newEdges.filter((e) => !existingIds.has(e.id));
+      return fresh.length > 0 ? [...es, ...fresh] : es;
+    });
 
     prevCatNames.current = newCatNames;
     prevToolIds.current  = newToolIds;
@@ -605,4 +621,6 @@ export default function ArchDiagram({ selected }: Props) {
       </div>
     </div>
   );
-}
+});
+
+export default ArchDiagram;
