@@ -31,8 +31,6 @@ FROM category c,
 ('Gemini'),
 ('Cohere'),
 ('Mistral API'),
-('AI21'),
-('Grok'),
 ('Llama'),
 ('DeepSeek'),
 ('Qwen'),
@@ -283,7 +281,7 @@ SELECT id, 'GPT-4.1 Mini',   'Lightweight and fast GPT-4.1 variant',   0, 'month
 INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
 SELECT id, 'GPT-4.1 Nano',   'Cheapest and fastest GPT-4.1 variant',   0, 'monthly', TRUE,  0.10,  0.40   FROM tools WHERE name = 'OpenAI (GPT-4.1, o3, o4)';
 INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
-SELECT id, 'o3',             'Advanced reasoning model',                0, 'monthly', TRUE, 10.00, 40.00   FROM tools WHERE name = 'OpenAI (GPT-4.1, o3, o4)';
+SELECT id, 'o3',             'Advanced reasoning model',                0, 'monthly', TRUE, 2.00, 8.00   FROM tools WHERE name = 'OpenAI (GPT-4.1, o3, o4)';
 INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
 SELECT id, 'o4-mini',        'Fast reasoning at lower cost',            0, 'monthly', TRUE,  1.10,  4.40   FROM tools WHERE name = 'OpenAI (GPT-4.1, o3, o4)';
 
@@ -305,9 +303,9 @@ SELECT id, 'Claude Haiku 3.5','Fastest and most compact Claude',        0, 'mont
 INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
 SELECT id, 'Gemini 2.5 Pro',   'Most capable Gemini model',            0, 'monthly', TRUE,  1.25,  10.00, TRUE  FROM tools WHERE name = 'Gemini';
 INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
-SELECT id, 'Gemini 2.5 Flash', 'Fast and efficient Gemini model',      0, 'monthly', TRUE,  0.075,  0.30   FROM tools WHERE name = 'Gemini';
+SELECT id, 'Gemini 2.5 Flash', 'Fast and efficient Gemini model',      0, 'monthly', TRUE,  0.30,  2.50   FROM tools WHERE name = 'Gemini';
 INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
-SELECT id, 'Gemini 2.0 Flash', 'Previous generation flash model',      0, 'monthly', TRUE,  0.10,   0.40   FROM tools WHERE name = 'Gemini';
+SELECT id, 'Gemini 2.0 Flash', 'Previous generation flash model',      0, 'monthly', TRUE,  0.15,   0.60   FROM tools WHERE name = 'Gemini';
 
 -- ==========================
 -- Cohere
@@ -317,15 +315,22 @@ INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_ba
 SELECT id, 'Command R+',  'Cohere flagship for enterprise RAG',         0, 'monthly', TRUE,  2.50,  10.00, TRUE  FROM tools WHERE name = 'Cohere';
 INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
 SELECT id, 'Command R',   'Balanced model for RAG and agents',          0, 'monthly', TRUE,  0.15,   0.60  FROM tools WHERE name = 'Cohere';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
+SELECT id, 'Command A+',  'Our fastest, most powerful open-source model for high-performance enterprise agents with maximum efficiency.',         0, 'monthly', TRUE,  0.00,  0.00, TRUE  FROM tools WHERE name = 'Cohere';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
+SELECT id, 'Command R7B',  'Our smallest model, made for building powerful applications on commodity GPUs and edge devices.',         0, 'monthly', TRUE,  0.0375,  0.15, TRUE  FROM tools WHERE name = 'Cohere';
+
 
 -- ==========================
 -- Mistral API
 -- ==========================
 
 INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
-SELECT id, 'Mistral Large', 'Top-tier Mistral frontier model',          0, 'monthly', TRUE,  2.00,  6.00,  TRUE  FROM tools WHERE name = 'Mistral API';
+SELECT id, 'Mistral Large 3', 'Top-tier Mistral frontier model',          0, 'monthly', TRUE,  0.50,  1.50,  TRUE  FROM tools WHERE name = 'Mistral API';
 INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
-SELECT id, 'Mistral Small', 'Efficient model for simple tasks',         0, 'monthly', TRUE,  0.10,  0.30   FROM tools WHERE name = 'Mistral API';
+SELECT id, 'Mistral Small 4', 'Efficient model for simple tasks',         0, 'monthly', TRUE,  0.15,  0.60   FROM tools WHERE name = 'Mistral API';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
+SELECT id, 'Mistral Medium 3.5', 'State-of-the-art performance. Simplified enterprise deployments. Cost-efficient.',          0, 'monthly', TRUE,  1.50,  7.50,  TRUE  FROM tools WHERE name = 'Mistral API';
 
 -- ==========================
 -- Grok
@@ -334,14 +339,16 @@ SELECT id, 'Mistral Small', 'Efficient model for simple tasks',         0, 'mont
 INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
 SELECT id, 'Grok 3',        'xAI flagship reasoning model',             0, 'monthly', TRUE,  3.00, 15.00,  TRUE  FROM tools WHERE name = 'Grok';
 INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
-SELECT id, 'Grok 3 Mini',   'Fast and affordable Grok model',           0, 'monthly', TRUE,  0.30,  0.50   FROM tools WHERE name = 'Grok';
+SELECT id, 'Grok 3 Mini Global',   'Fast and affordable Grok model',           0, 'monthly', TRUE,  0.25,  1.27   FROM tools WHERE name = 'Grok';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
+SELECT id, 'Grok 4 Fast',        'xAI flagship reasoning model',             0, 'monthly', TRUE,  0.20, 0.50,  TRUE  FROM tools WHERE name = 'Grok';
 
 -- ==========================
 -- Llama
 -- ==========================
 
 INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
-SELECT id, 'Llama 4 Scout (Meta)',       'Meta hosted Llama 4 Scout',   0, 'monthly', TRUE,  0.17,  0.17, FALSE FROM tools WHERE name = 'Llama';
+SELECT id, 'Llama 3.3 70B Global(azure)',       'Llama 3.3 70B Global',   0, 'monthly', TRUE,  0.71,  0.71, FALSE FROM tools WHERE name = 'Llama';
 INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
 SELECT id, 'Llama 3.3 70B (Groq)',       'Via Groq inference',          0, 'monthly', TRUE,  0.59,  0.79, TRUE  FROM tools WHERE name = 'Llama';
 INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
@@ -367,18 +374,20 @@ SELECT id, 'DeepSeek V3 Flash','Low-cost fast variant',                  0, 'mon
 -- ==========================
 
 INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
-SELECT id, 'Qwen3 235B',  'Alibaba flagship Qwen3 model',               0, 'monthly', TRUE,  0.40,  1.20, TRUE  FROM tools WHERE name = 'Qwen';
+SELECT id, 'Qwen3.5-Flash',  'Alibaba flagship Qwen3 model',               0, 'monthly', TRUE,  0.10,  0.4, TRUE  FROM tools WHERE name = 'Qwen';
 INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
-SELECT id, 'Qwen3 30B',   'Mid-size Qwen3 model',                       0, 'monthly', TRUE,  0.10,  0.30  FROM tools WHERE name = 'Qwen';
+SELECT id, 'Qwen3.6-Plus',   'Mid-size Qwen3 model',                       0, 'monthly', TRUE,  0.50,  3.00  FROM tools WHERE name = 'Qwen';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
+SELECT id, 'Qwen3.7-Max',   'Mid-size Qwen3 model',                       0, 'monthly', TRUE,  2.50,  7.50  FROM tools WHERE name = 'Qwen';
 
 -- ==========================
 -- Phi
 -- ==========================
 
 INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
-SELECT id, 'Phi-4',       'Microsoft Phi-4 14B model',                  0, 'monthly', TRUE,  0.07,  0.14, TRUE  FROM tools WHERE name = 'Phi';
+SELECT id, 'Phi-4',       'Microsoft Phi-4 14B model',                  0, 'monthly', TRUE,  0.125,  0.5, TRUE  FROM tools WHERE name = 'Phi';
 INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
-SELECT id, 'Phi-4 Mini',  'Compact Phi-4 3.8B model',                   0, 'monthly', TRUE,  0.04,  0.07  FROM tools WHERE name = 'Phi';
+SELECT id, 'Phi-4 Mini',  'Compact Phi-4 3.8B model',                   0, 'monthly', TRUE,  0.075,  0.3  FROM tools WHERE name = 'Phi';
 
 -- ==========================
 -- Gemma
@@ -417,15 +426,22 @@ INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_ba
 SELECT id, 'text-embedding-3-small', 'OpenAI small embedding model',    0, 'monthly', TRUE, 0.02, 0  FROM tools WHERE name = 'OpenAI Embeddings';
 
 INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
-SELECT id, 'voyage-3-large', 'Voyage AI flagship embedding',            0, 'monthly', TRUE, 0.06, 0, TRUE  FROM tools WHERE name = 'Voyage AI';
+SELECT id, 'voyage-4', 'Voyage AI flagship embedding',            0, 'monthly', TRUE, 0.06, 0, TRUE  FROM tools WHERE name = 'Voyage AI';
 INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
-SELECT id, 'voyage-3',       'Voyage AI standard embedding',            0, 'monthly', TRUE, 0.02, 0  FROM tools WHERE name = 'Voyage AI';
+SELECT id, 'voyage-4-large',       'Voyage AI standard embedding',            0, 'monthly', TRUE, 0.12, 0  FROM tools WHERE name = 'Voyage AI';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m)
+SELECT id, 'voyage-4-lite',       'Voyage AI standard embedding',            0, 'monthly', TRUE, 0.02, 0  FROM tools WHERE name = 'Voyage AI';
 
 INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
-SELECT id, 'embed-v4.0', 'Cohere multilingual embeddings',              0, 'monthly', TRUE, 0.10, 0, TRUE  FROM tools WHERE name = 'Cohere Embed';
+SELECT id, 'embed-v4.0', 'Cohere multilingual embeddings',              0, 'monthly', TRUE, 0.12, 0, TRUE  FROM tools WHERE name = 'Cohere Embed';
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
+SELECT id, 'embed-3', 'Cohere multilingual embeddings',              0, 'monthly', TRUE, 0.10, 0, TRUE  FROM tools WHERE name = 'Cohere Embed';
 
 INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
-SELECT id, 'jina-embeddings-v3', 'Jina AI multilingual embedding',      0, 'monthly', TRUE, 0.02, 0, TRUE  FROM tools WHERE name = 'Jina AI';
+SELECT id, 'BAAI: bge-m3', 'openrouter',      0, 'monthly', TRUE, 0.01, 0, TRUE  FROM tools WHERE name = 'BAAI BGE';
+
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
+SELECT id, 'jina-embeddings-v3', 'Jina AI multilingual embedding',      0, 'monthly', TRUE, 0.05, 0, TRUE  FROM tools WHERE name = 'Jina AI';
 
 -- ==========================
 -- LangGraph
@@ -453,6 +469,24 @@ INSERT INTO plans (
 )
 SELECT
     id,
+    'Developer',
+    'Perfect for prototyping and testing or evaluating enterprise POCs. Not suitable for production workloads.',
+    0,
+    'monthly',
+    FALSE
+FROM tools
+WHERE name = 'Portkey';
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    is_popular
+)
+SELECT
+    id,
     'Production',
     'Great for teams ready to deploy LLM apps in production. Not recommended for organizations requiring custom security controls or data residency guarantees.',
     49.00,
@@ -461,10 +495,123 @@ SELECT
 FROM tools
 WHERE name = 'Portkey';
 
+-- ============================================================
+-- LangDB
+-- ============================================================
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
+    'free',
+    'Best for getting started',
+    0,
+    'monthly',
+     ARRAY[
+        'Access to 250+ models',
+        '1 Project',
+        '2k logs / month',
+        '7-day data retention',
+        'Tracing and debugging',
+        'Observability',
+        'Google Workspace'
+    ],
+    FALSE
+FROM tools
+WHERE name = 'LangDB';
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
+    'Professional',
+    'Best for individual developers',
+    49.00,
+    'monthly',
+     ARRAY[
+        '2 Projects',
+        '20k logs / month',
+        'Bring your own LLM keys',
+        'Project level Cost Control',
+        'Basic Guardrails',
+        '30-day data retention',
+        'User Management',
+        '10 Virtual Models'
+    ],
+    TRUE
+FROM tools
+WHERE name = 'LangDB';
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
+    'Business',
+    'Best for individual developers',
+    199.00,
+    'monthly',
+     ARRAY[
+        'Unlimited Projects',
+        '200k logs / month',
+        '90-day data retention',
+        'LLM + Partner Guardrails',
+        'Unlimited virtual models',
+        'Role based access',
+        'SSO + SAML',
+        'Dynamic Cost Control'
+    ],
+    FALSE
+FROM tools
+WHERE name = 'LangDB';
 
 -- ============================================================
 -- LangChain
 -- ============================================================
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
+    'Developer',
+    'For solo users getting started.',
+    0,
+    'monthly',
+    ARRAY[
+        '1 seat',
+        'Community support',
+        'Up to 5k base traces / mo, then pay-as-you-go'
+    ],
+    FALSE
+FROM tools
+WHERE name = 'LangChain';
 
 INSERT INTO plans (
     tool_id,
@@ -497,8 +644,400 @@ WHERE name = 'LangChain';
 
 
 -- ============================================================
+-- CrewAI
+-- ============================================================
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
+    'basic',
+    'Build an agentic workflow today, and see whats possible with collaborative AI agents.',
+    0,
+    'monthly',
+    ARRAY[
+        'Visual editor and AI copilot',
+        'GitHub integration',
+        '50 workflow executions/month'
+    ],
+    FALSE
+FROM tools
+WHERE name = 'CrewAI';
+
+
+-- ============================================================
+-- Agno
+-- ============================================================
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
+    'Free',
+    'For building agent systems',
+    0,
+    'monthly',
+    ARRAY[
+        'Open Source',
+        'Control Plane for local AgentOS',
+        'Jumpstart & community'
+    ],
+    FALSE
+FROM tools
+WHERE name = 'Agno';
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
+    'Pro',
+    'For managing production systems',
+    150.00,
+    'monthly',
+    ARRAY[
+        'Everything in Free',
+        'Control Plane for live AgentOS',
+        'Unlimited usage'
+    ],
+    TRUE
+FROM tools
+WHERE name = 'Agno';
+
+
+-- ============================================================
+-- PydanticAI
+-- ============================================================
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
+    'Personal',
+    'For your personal account — use it for proof of concept and personal projects.',
+    0,
+    'monthly',
+     ARRAY[
+        '1 seat',
+        '2 guests (read-only)',
+        '3 projects',
+        '10M logs/spans/metrics incl.',
+        '30-day data retention',
+        'EU or US region',
+        'Pydantic AI Gateway'
+    ],
+    FALSE
+FROM tools
+WHERE name = 'PydanticAI';
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
+    'Team',
+    'For startups and small teams shipping to prod. Fair rates for records. Price cap if needed.',
+    49.00,
+    'monthly',
+     ARRAY[
+        'Everything from Personal',
+        'Money-back guarantee',
+        'Up to 12 seats (5 included)',
+        '10 guests (read-only)',
+        '5 projects',
+        '$2/M additional records',
+        'Price cap',
+        'Pydantic AI Gateway'
+    ],
+    TRUE
+FROM tools
+WHERE name = 'PydanticAI';
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
+    'Growth',
+    'For scaling teams wanting the full power of Logfire. Priority support plus no seat or project caps.',
+    259.00,
+    'monthly',
+     ARRAY[
+        'Everything from Team',
+        'Unlimited seats',
+        'Unlimited guests',
+        'Unlimited projects',
+        'Priority support',
+        'Extended data retention',
+        'Data deletion (GDPR)',
+        'Boilerplate BAA (HIPAA)',
+        'Pydantic AI Gateway'
+    ],
+    FALSE
+FROM tools
+WHERE name = 'PydanticAI';
+
+-- ============================================================
+-- Camel AI
+-- ============================================================
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
+    'free',
+    '',
+    0,
+    'monthly',
+     ARRAY[
+        'Bring your own API key',
+        '1 workspace',
+        '3 deployed apps',
+        '5 GB storage',
+        '2 cron jobs (daily)'
+    ],
+    FALSE
+FROM tools
+WHERE name = 'Camel AI';
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
+    'Starter',
+    '',
+    10.00,
+    'monthly',
+     ARRAY[
+        '$10 of model credits / mo',
+        'Bring your own API key',
+        '30 deployed apps',
+        '50 GB storage',
+        '10 cron jobs (hourly)',
+        '10 custom domains',
+        'Email inbox'
+    ],
+    FALSE
+FROM tools
+WHERE name = 'Camel AI';
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
+    'pro',
+    '',
+    40.00,
+    'monthly',
+     ARRAY[
+        '$40 of model credits / mo',
+        'Bring your own API key',
+        'Unlimited apps',
+        '100 GB storage',
+        '50 cron jobs (5-min)',
+        'Unlimited domains'
+    ],
+    FALSE
+FROM tools
+WHERE name = 'Camel AI';
+
+
+-- ============================================================
+-- SmolAgents
+-- ============================================================
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features
+)
+SELECT
+    id,
+    'Starter',
+    'Starter Plan',
+    0.00,
+    'monthly',
+    ARRAY[
+        '5 Devices',
+        '1 month cloud retention',
+        'Unlimited notifications',
+        'Basic integrations',
+        'Always free'
+    ]
+FROM tools
+WHERE name = 'SmolAgents';
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
+    'Pro',
+    'Professional Plan',
+    12.00,
+    'monthly',
+    ARRAY[
+        'Unlimited Devices',
+        '1 year cloud retention',
+        'Unlimited notifications',
+        'Advanced integrations',
+        'Priority Customer Support'
+    ],
+    TRUE
+FROM tools
+WHERE name = 'SmolAgents';
+
+
+-- ============================================================
+-- Mastra
+-- ============================================================
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
+    'Starter',
+    'Free for everyone',
+    0,
+    'monthly',
+     ARRAY[
+        '100K events  + $10/100K',
+        '24 CPU hours  + $0.35/hr',
+        '15 days',
+        'Unlimited users, deployments, and projects'
+    ],
+    FALSE
+FROM tools
+WHERE name = 'Mastra';
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
+    'Teams',
+    'For growing teams',
+    250.00,
+    'monthly',
+     ARRAY[
+        '1M events  + $8/100K'
+        '250 CPU hours  + $0.25/hr'
+        '6 months'
+        'Multiple teams, SSO, and SOC 2 docs'
+    ],
+    FALSE
+FROM tools
+WHERE name = 'Mastra';
+
+
+-- ============================================================
 -- LlamaIndex
 -- ============================================================
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features
+)
+SELECT
+    id,
+    'Free',
+    'Free Plan',
+    0.00,
+    'monthly',
+    ARRAY[
+      'Includes 10K credits',
+      'Upgrade to starter for Pay-as-you-go credits',
+      '100 users',
+      'Basic support'
+    ]
+FROM tools
+WHERE name = 'LlamaIndex';
 
 INSERT INTO plans (
     tool_id,
@@ -548,10 +1087,118 @@ SELECT
 FROM tools
 WHERE name = 'LlamaIndex';
 
+-- ============================================================
+-- Flowise
+-- ============================================================
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features
+)
+SELECT
+    id,
+    'Free',
+    'Free Plan',
+    0.00,
+    'monthly',
+    ARRAY[
+      '2 Flows & Assistants',
+      '100 Predictions / month',
+      '5MB Storage',
+      'Evaluations & Metrics',
+      'Custom Embedded Chatbot Branding',
+      'Community Support'
+    ]
+FROM tools
+WHERE name = 'Flowise';
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features
+)
+SELECT
+    id,
+    'Starter',
+    'For individuals & small teams',
+    35.00,
+    'monthly',
+    ARRAY[
+        'Everything in Free',
+        'Unlimited Flows & Assistants',
+        '10,000 Predictions / month',
+        '1GB Storage',
+        'Community Support'
+    ]
+FROM tools
+WHERE name = 'Flowise';
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
+    'Pro',
+    'For medium-sized businesses',
+    65.00,
+    'monthly',
+    ARRAY[
+        'Everything in Starter',
+        '50,000 Predictions / month',
+        '10GB Storage',
+        'Unlimited Workspaces',
+        '5 Users+ $15/user/month',
+        'Admin Roles & Permissions',
+        'Priority Support'
+    ],
+    TRUE
+FROM tools
+WHERE name = 'Flowise';
+
+
+
 
 -- ============================================================
 -- PromptLayer
 -- ============================================================
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features
+)
+SELECT
+    id,
+    'free',
+    'for hackers',
+    0.00,
+    'monthly',
+    ARRAY[
+        '5 Users',
+        '2.5k/month Requests',
+        '1 Workspace',
+        '250/month Eval Cell Executions',
+        '10MB max per Dataset'
+    ]
+FROM tools
+WHERE name = 'PromptLayer';
+
 
 INSERT INTO plans (
     tool_id,
@@ -606,6 +1253,30 @@ WHERE name = 'PromptLayer';
 -- ============================================================
 -- Helicone
 -- ============================================================
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
+    'Free',
+    'Kickstart your AI project.',
+    0,
+    'monthly',
+    ARRAY[
+        'Everything in Hobby',
+        '10,000 free requests',
+        '1 GB storage',
+        '1 seat, 1 organization'
+    ],
+    TRUE
+FROM tools
+WHERE name = 'Helicone';
 
 INSERT INTO plans (
     tool_id,
@@ -671,20 +1342,95 @@ INSERT INTO plans (
 )
 SELECT
     id,
+    'free',
+    'Explore Confident AI at no cost.',
+    0.00,
+    'monthly',
+    ARRAY[
+        'Full LLM unit and regression testing suite',
+        'Evals in development and CI/CD',
+        'LLM tracing',
+        'Prompt versioning',
+        'Community and documentation support',
+        'Limited to 2 user seats',
+        'Limited to 1 project',
+        '5 test runs per week',
+        'additional test runs are locked',
+        '1 GB-month of trace spans',
+        'additional trace spans are dropped'
+    ],
+    TRUE
+FROM tools
+WHERE name = 'DeepEval';
+
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
     'Starter',
-    'Starter Plan',
-    9.99,
+    'Launch reliable AI into production.',
+    200,
     'monthly',
     ARRAY[
         'Datasets on the cloud',
         'Custom evaluation metrics',
         'Online evals on live traffic',
-        'Human annotation',
+        'Annotation queues & workflows',
         'Chat simulations',
         'Downstream observability workflows',
         'Real-time alerting',
-        'Trace data transformers',
-        'Full Project API Access'
+        'Full Project API Access',
+        'Limits',
+        'Unlimited user seats',
+        'Limited to 5 projects',
+        '5 GB-months of trace spans',
+        'then $1 per GB-month ingested or retained',
+        '5k online eval metric runs/month',
+        'then $1 per 1k runs'
+    ],
+    TRUE
+FROM tools
+WHERE name = 'DeepEval';
+
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
+    'Team',
+    'Scale AI quality across your organization.',
+    2000,
+    'monthly',
+    ARRAY[
+        'No-code AI evaluation workflows',
+        'Alert integrations (e.g. Slack and PagerDuty)',
+        'Metric & dataset versioning',
+        'Git-based prompt workflows',
+        'Custom RBAC',
+        'SOC2',
+        'SSO'
+        'Dedicated support channel',
+        'Unlimited user seats',
+        'Unlimited projects',
+        '75 GB-months of trace spans',
+        'then $1 per GB-month ingested or retained',
+        '50k online eval metric runs/month',
+        'then $1 per 1k runs'
     ],
     TRUE
 FROM tools
@@ -694,6 +1440,31 @@ WHERE name = 'DeepEval';
 -- ============================================================
 -- Braintrust
 -- ============================================================
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
+    'Starter',
+    'For everyone',
+    0.00,
+    'monthly',
+    ARRAY[
+      '$10 credits   + tok rates',
+      '1 GB processed data  + $4/GB',
+      '10k scores  + $2.50/1k',
+      '14-day retention'
+    ],
+    TRUE
+FROM tools
+WHERE name = 'Braintrust';
 
 INSERT INTO plans (
     tool_id,
@@ -726,6 +1497,503 @@ SELECT
     TRUE
 FROM tools
 WHERE name = 'Braintrust';
+
+-- Pinecone
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, features, is_popular)
+SELECT id, 'Starter', 'For trying out and for small applications.', 0, 'monthly',
+  ARRAY[
+    'Pinecone Database On-Demand',
+    'Pinecone Inference',
+    'Pinecone Assistant',
+    'Dense, Sparse, and Full-Text Indexes',
+    'Console Metrics',
+    'Community Support via Discord',
+    'Example Starter Plan workloads'
+  ], 
+  FALSE
+FROM tools WHERE name = 'Pinecone';
+
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, features, is_popular)
+SELECT id, 'Builder', 'For solo developers and small teams.', 20, 'monthly',
+  ARRAY[
+    'Everything in Starter',
+    'Increased usage limits',
+    'Choose your cloud and region',
+    'Multiple projects and users',
+    'Prometheus and Datadog monitoring',
+    'Includes Free support',
+    'Response SLAs available via'
+  ], 
+  FALSE
+FROM tools WHERE name = 'Pinecone';
+
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, features, is_popular)
+SELECT id, 'Standard', 'For production applications at any scale.', 50, 'monthly',
+  ARRAY[
+    'Everything in Builder',
+    'Pay-as-you-go for Database On-Demand, Inference, and Assistant Usage',
+    'Choose your cloud and region',
+    'Dedicated Read Nodes (DRN)',
+    'Import from object storage',
+    'Backup and Restore',
+    'User and API Key RBAC',
+    'SAML SSO',
+    'HIPAA add-on',
+    'Includes Free support',
+    'Response SLAs available via'
+  ]
+  , TRUE
+FROM tools WHERE name = 'Pinecone';
+
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, features, is_popular)
+SELECT id, 'Enterprise', 'For mission-critical production applications.', 500, 'monthly',
+  ARRAY[
+    'Everything in Standard',
+    '99.95% Uptime SLA',
+    'Bring Your Own Cloud (BYOC)',
+    'Private Networking',
+    'Customer Managed Encryption Keys',
+    'Audit Logs',
+    'Service Accounts',
+    'Admin APIs',
+    'HIPAA Compliance',
+    'Pro support included'
+  ]
+  , FALSE
+FROM tools WHERE name = 'Pinecone';
+
+
+
+-- Weaviate
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, features, is_popular)
+SELECT id, 'Free', 'A fully managed AI Database to explore Weaviate features. Easiest way to get started, always free.', 0, 'monthly',
+  ARRAY[
+    '✓Always free — 1 cluster per user, upgrade to paid anytime.',
+    '✓100,000 objects · 1 GB memory · 10 GB disk.',
+    '✓1 collection, up to 3 tenants.',
+    '✓Embeddings (2,000 req/day) + Query Agent (1,000 req/mo).',
+    '✓Basic Support'
+  ], 
+  FALSE
+FROM tools WHERE name = 'Weaviate';
+
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, features, is_popular)
+SELECT id, 'Flex', 'Zero-commitment entry point to experiment and ship quickly. Ideal for prototypes, pilots, small use cases.', 45, 'monthly',
+  ARRAY[
+    '✓Pay-as-you-go, monthly, no commitment.',
+    '✓Shared cloud cluster with full core DB toolkit + replication.',
+    '✓Baseline security with RBAC.',
+    '✓Highly available clusters — 99.5% uptime.',
+    '✓Query Agent free tier + usage-based; Embeddings usage-based.',
+    '✓Standard support — next-business-day Sev 1'
+  ], 
+  TRUE
+FROM tools WHERE name = 'Weaviate';
+
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, features, is_popular)
+SELECT id, 'Premium', 'For teams scaling AI in production who need predictable pricing and enhanced reliability.', 400, 'monthly',
+  ARRAY[
+    '✓Prepaid contract with predictable spend.',
+    '✓Choice of shared or dedicated deployment.',
+    '✓Trusted reliability — up to 99.95% uptime.',
+    '✓Global coverage on AWS, GCP & Azure.',
+    '✓Query Agent free tier + usage-based; Embeddings usage-based.',
+    '✓Enterprise support — as fast as 1-hour Sev 1 + dedicated Technical Account Team'
+  ], 
+  FALSE
+FROM tools WHERE name = 'Weaviate';
+
+-- Neo4j
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, features, is_popular)
+SELECT id, 'AuraDB Free', 'Learn and Explore Graphs', 0, 'monthly',
+  ARRAY[
+    'No credit card or other payment method required',
+    'Start learning with access to all graph tools'
+  ], FALSE
+FROM tools WHERE name = 'Neo4j';
+
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, features, is_popular)
+SELECT id, 'AuraDB Professional', 'Build Production-Ready Apps', 65, 'monthly',
+  ARRAY[
+    'Up to 128GB memory per database instance',
+    'Scalable on demand',
+    'Daily backups, 7-day retention',
+    'Available on Azure, AWS, and Google Cloud',
+    'Advanced instance-level metrics'
+  ], TRUE
+FROM tools WHERE name = 'Neo4j';
+
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, features, is_popular)
+SELECT id, 'AuraDB Business Critical', 'Scale Apps for Enterprise Use', 65, 'monthly',
+  ARRAY[
+    'Up to 1944GB memory instance (GCP) & 512GB memory instance (AWS & Azure)',
+    'Highly available 3-zone cluster with 99.95% uptime SLA',
+    'Daily backups with 30-day retention and hourly point-in-time restore',
+    'Role-based access control with granular security',
+    'Pay-as-you-go and prepaid consumption billing'
+  ], FALSE
+FROM tools WHERE name = 'Neo4j';
+
+-- LangSmith
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, features, is_popular)
+SELECT id, 'Developer', 'LangSmith free tier', 0, 'monthly',
+  ARRAY['5k traces/month','7-day retention','1 workspace'], FALSE
+FROM tools WHERE name = 'LangSmith';
+
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, features, is_popular)
+SELECT id, 'Plus', 'LangSmith for teams', 39, 'monthly',
+  ARRAY['Unlimited tracing','30-day retention','Team collaboration','Deployments'], TRUE
+FROM tools WHERE name = 'LangSmith';
+
+-- Cohere Rerank
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, is_token_based, price_input_per_1m, price_output_per_1m, is_popular)
+SELECT id, 'rerank-v3.5', 'Cohere reranking API', 0, 'monthly', TRUE, 2.00, 0, TRUE
+FROM tools WHERE name = 'Cohere Rerank';
+
+-- BGE Reranker (open source, self-hosted — flat $0)
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, features, is_popular)
+SELECT id, 'Open Source', 'Self-hosted BGE Reranker', 0, 'monthly',
+  ARRAY['BAAI/bge-reranker-v2-m3','Cross-encoder scoring','No API cost'], TRUE
+FROM tools WHERE name = 'BGE Reranker';
+
+-- LlamaParse (already exists but ensure popular plan present — skip if already seeded)
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, features, is_popular)
+SELECT id, 'Free', 'LlamaParse free tier', 0, 'monthly',
+  ARRAY['7k pages/day','Basic parsing'], FALSE
+FROM tools WHERE name = 'LlamaParse'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features
+)
+SELECT
+    id,
+    'Starter',
+    'Starter Plan',
+    50.00,
+    'monthly',
+    ARRAY[
+        '40K credits',
+        'Pay-as-you-go up to 400K credits',
+        '5 users',
+        'Basic support'
+    ]
+FROM tools
+WHERE name = 'LlamaParse';
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
+    'Pro',
+    'Professional Plan',
+    500.00,
+    'monthly',
+    ARRAY[
+        '400K credits',
+        'Pay-as-you-go up to 4,000K credits',
+        '10 users',
+        'Slack support'
+    ],
+    TRUE
+FROM tools
+WHERE name = 'LlamaParse';
+
+
+-- Semantic Chunking (open source component)
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, features, is_popular)
+SELECT id, 'Open Source', 'Semantic chunking (LangChain/LlamaIndex)', 0, 'monthly',
+  ARRAY['Sentence-level splitting','Embedding-based boundaries','No cost'], TRUE
+FROM tools WHERE name = 'Semantic Chunking';
+
+-- Hybrid Search (open source component)
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, features, is_popular)
+SELECT id, 'Open Source', 'Hybrid search (BM25 + dense)', 0, 'monthly',
+  ARRAY['Sparse + dense fusion','RRF scoring','No cost'], TRUE
+FROM tools WHERE name = 'Hybrid Search';
+
+-- BM25 (open source)
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, features, is_popular)
+SELECT id, 'Open Source', 'BM25 sparse retrieval', 0, 'monthly',
+  ARRAY['Keyword scoring','Fast lexical search','No cost'], TRUE
+FROM tools WHERE name = 'BM25';
+
+-- Dense Retrieval (open source)
+INSERT INTO plans (tool_id, name, description, price, billing_cycle, features, is_popular)
+SELECT id, 'Open Source', 'Dense vector retrieval', 0, 'monthly',
+  ARRAY['ANN search','Embedding-based','No cost'], TRUE
+FROM tools WHERE name = 'Dense Retrieval';
+
+
+-- ============================================================
+-- MongoDB
+-- ============================================================
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
+    'Free',
+    'For learning and exploring MongoDB in a cloud environment.',
+    0,
+    'monthly',
+    ARRAY[
+        'STORAGE  512 MB',
+        'RAM  Shared',
+        'vCPU  Shared'
+    ],
+    FALSE
+FROM tools
+WHERE name = 'MongoDB';
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
+    'Flex',
+    'For application development and testing; resources and costs scale to your needs.',
+    30.00,
+    'monthly',
+    ARRAY[
+        'STORAGE  Up to 5 GB',
+        'RAM  Shared',
+        'vCPU  Shared'
+    ],
+    FALSE
+FROM tools
+WHERE name = 'MongoDB';
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
+    'Dedicated',
+    'For production applications with sophisticated workload requirements.',
+    56.94,
+    'monthly',
+    ARRAY[
+        'STORAGE  Up to 10 GB',
+        'RAM  2 GB',
+        'vCPU  2cCPUs'
+    ],
+    TRUE
+FROM tools
+WHERE name = 'MongoDB';
+
+-- ============================================================
+-- Redis
+-- ============================================================
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
+    'Free',
+    'Up to 30 MB',
+    0,
+    'monthly',
+    ARRAY[
+        'Shared cloud deployment',
+        '30 MB single DB',
+        'Best-effort SLA, community support'
+    ],
+    FALSE
+FROM tools
+WHERE name = 'Redis';
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
+    'Essentials',
+    'For application development and testing; resources and costs scale to your needs.',
+    50.00,
+    'monthly',
+    ARRAY[
+        'Shared deployment',
+        '250 MB-100 GB RAM & SSD, single DB',
+        'SAML SSO, RBAC, encryption in transit, encryption at rest',
+        'Up to 99.99% uptime, basic support only',
+        'Redis Flex at 10% RAM for lowest cost'
+    ],
+    FALSE
+FROM tools
+WHERE name = 'Redis';
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    features,
+    is_popular
+)
+SELECT
+    id,
+    'Pro',
+    'For production applications with sophisticated workload requirements.',
+    200.00,
+    'monthly',
+    ARRAY[
+        'Dedicated cloud deployment',
+        'Unlimited RAM, multiple DBs',
+        'Everything in Essentials, plus active-active (multi-region), auto-tiering, private connectivity',
+        'Up to 99.999% uptime',
+        'Flex for TBs of data, millions of ops/sec, adjustable pricing, and RAM:Flash ratio'
+    ],
+    TRUE
+FROM tools
+WHERE name = 'Redis';
+
+
+-- ============================================================
+-- BigQuery
+-- ============================================================
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    is_popular
+)
+SELECT
+    id,
+    'Active logical storage',
+    '$0.023 / 1 GiB month, per 1 month / account (First 10 GiB free each month)',
+    0.023,
+    'monthly',
+    FALSE
+FROM tools
+WHERE name = 'BigQuery'
+
+UNION ALL
+
+SELECT
+    id,
+    'Long-term logical storage',
+    '$0.016 / 1 GiB month, per 1 month / account (First 10 GiB free each month)',
+    0.016,
+    'monthly',
+    FALSE
+FROM tools
+WHERE name = 'BigQuery'
+
+UNION ALL
+
+SELECT
+    id,
+    'Active physical storage',
+    '$0.04 / 1 GiB month, per 1 month / account (First 10 GiB free each month)',
+    0.04,
+    'monthly',
+    FALSE
+FROM tools
+WHERE name = 'BigQuery'
+
+UNION ALL
+
+SELECT
+    id,
+    'Long-term physical storage',
+    '$0.02 / 1 GiB month, per 1 month / account (First 10 GiB free each month)',
+    0.02,
+    'monthly',
+    FALSE
+FROM tools
+WHERE name = 'BigQuery';
+
+-- ============================================================
+-- ClickHouse
+-- ============================================================
+
+INSERT INTO plans (
+    tool_id,
+    name,
+    description,
+    price,
+    billing_cycle,
+    is_popular
+)
+SELECT
+    id,
+    'Basic',
+    'Storage: $25.30 per 1 TB/month. Compute: $0.2181 per unit/hour. Includes up to 1 TB storage, 8-12 GiB memory, daily backups (1-day retention), single availability zone, cloud export backups, expert support (1 business day), Google/Microsoft SSO, and MFA.',
+    25.30,
+    'monthly',
+    FALSE
+FROM tools
+WHERE name = 'ClickHouse'
+
+UNION ALL
+
+SELECT
+    id,
+    'Scale',
+    'Storage: $25.30 per 1 TB/month. Compute: $0.2985 per unit/hour. Includes unlimited storage, configurable memory, compute-storage separation, configurable backups, 2+ availability zones, private networking, automatic vertical scaling, manual horizontal scaling, S3 role-based access, and enhanced support.',
+    25.30,
+    'monthly',
+    TRUE
+FROM tools
+WHERE name = 'ClickHouse'
+
+UNION ALL
+
+SELECT
+    id,
+    'Enterprise',
+    'Storage: $25.30 per 1 TB/month. Compute: $0.3903 per unit/hour. Includes SAML SSO, private regions, manual vertical scaling, enterprise support, named support engineer, transparent data encryption (CMEK), scheduled upgrades, migration guidance, HIPAA and PCI compliance.',
+    25.30,
+    'monthly',
+    FALSE
+FROM tools
+WHERE name = 'ClickHouse';
 
 COMMIT;
 
@@ -1039,3 +2307,131 @@ WHERE t.name IN (
 );
 
 COMMIT;
+
+-- ==========================================================
+-- Embedding Models — Self-hosting (open-source only)
+-- OpenAI Embeddings, Voyage AI, Cohere Embed = API-only, not self-hostable
+-- BAAI BGE, Jina AI, Sentence Transformers, Nomic Embed, E5 Models = open source
+-- ==========================================================
+
+BEGIN;
+
+INSERT INTO tool_self_hosting (tool_id, instance_id, notes, is_recommended)
+SELECT t.id, ci.id,
+'Self-hosted embedding inference. CPU-only works for light loads; recommend 4+ vCPU / 8 GB RAM for production throughput.',
+ci.instance_type IN ('t3.large','Standard_B2ms','n2-standard-2')
+FROM tools t
+JOIN cloud_instances ci
+ON ci.instance_type IN (
+  't3.medium',
+  't3.large',
+  'm5.large',
+  'Standard_B2ms',
+  'Standard_D2s_v3',
+  'Standard_D4s_v3',
+  'e2-medium',
+  'n2-standard-2',
+  'n2-standard-4'
+)
+WHERE t.name IN (
+  'BAAI BGE',
+  'Jina AI',
+  'Sentence Transformers',
+  'Nomic Embed',
+  'E5 Models'
+)
+ON CONFLICT (tool_id, instance_id) DO NOTHING;
+
+COMMIT;
+
+-- ==========================================================
+-- RAG Components — Self-hosting
+-- LlamaParse = API-only (LlamaCloud), no self-host
+-- Cohere Rerank = API-only, no self-host
+-- All others = open source / library components
+-- ==========================================================
+
+BEGIN;
+
+-- Document parsers — moderate CPU/RAM for PDF/DOCX processing
+INSERT INTO tool_self_hosting (tool_id, instance_id, notes, is_recommended)
+SELECT t.id, ci.id,
+'Self-hosted document parser. Needs moderate CPU and memory for concurrent file processing.',
+ci.instance_type IN ('t3.medium','Standard_B2ms','n2-standard-2')
+FROM tools t
+JOIN cloud_instances ci
+ON ci.instance_type IN (
+  't3.small','t3.medium','t3.large',
+  'Standard_B2s','Standard_B2ms','Standard_D2s_v3',
+  'e2-medium','n2-standard-2','n2-standard-4'
+)
+WHERE t.name IN (
+  'Docling',
+  'Unstructured',
+  'Apache Tika',
+  'Marker'
+)
+ON CONFLICT (tool_id, instance_id) DO NOTHING;
+
+-- Orchestration frameworks — lightweight app servers
+INSERT INTO tool_self_hosting (tool_id, instance_id, notes, is_recommended)
+SELECT t.id, ci.id,
+'Runs as a Python application server. Minimal resource footprint.',
+ci.instance_type IN ('t3.medium','Standard_B2ms','n2-standard-2')
+FROM tools t
+JOIN cloud_instances ci
+ON ci.instance_type IN (
+  't3.small','t3.medium',
+  'Standard_B2s','Standard_B2ms',
+  'e2-medium','n2-standard-2'
+)
+WHERE t.name IN (
+  'LangChain',
+  'LlamaIndex'
+)
+ON CONFLICT (tool_id, instance_id) DO NOTHING;
+
+-- Pure library / in-process components — any app server works
+INSERT INTO tool_self_hosting (tool_id, instance_id, notes, is_recommended)
+SELECT t.id, ci.id,
+'Library component — runs in-process with your application. No dedicated server required.',
+ci.instance_type IN ('t3.medium','Standard_B2ms','n2-standard-2')
+FROM tools t
+JOIN cloud_instances ci
+ON ci.instance_type IN (
+  't3.small','t3.medium',
+  'Standard_B2s','Standard_B2ms',
+  'e2-medium','n2-standard-2'
+)
+WHERE t.name IN (
+  'Semantic Chunking',
+  'Recursive Chunking',
+  'Hybrid Search',
+  'BM25',
+  'Dense Retrieval',
+  'Sparse Retrieval',
+  'Parent Document Retrieval'
+)
+ON CONFLICT (tool_id, instance_id) DO NOTHING;
+
+-- Neural rerankers — need more CPU/RAM for model inference
+INSERT INTO tool_self_hosting (tool_id, instance_id, notes, is_recommended)
+SELECT t.id, ci.id,
+'Self-hosted cross-encoder / reranker inference. Recommend 4+ vCPU / 8 GB RAM for acceptable latency.',
+ci.instance_type IN ('t3.large','Standard_D2s_v3','n2-standard-2')
+FROM tools t
+JOIN cloud_instances ci
+ON ci.instance_type IN (
+  't3.medium','t3.large','m5.large',
+  'Standard_B2ms','Standard_D2s_v3','Standard_D4s_v3',
+  'e2-medium','n2-standard-2','n2-standard-4'
+)
+WHERE t.name IN (
+  'BGE Reranker',
+  'Jina Reranker',
+  'Cross Encoder'
+)
+ON CONFLICT (tool_id, instance_id) DO NOTHING;
+
+COMMIT;
+
