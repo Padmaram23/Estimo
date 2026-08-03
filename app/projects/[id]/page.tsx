@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useRef, useState, Suspense } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronRight, ChevronDown, Receipt, Tag, Trash2, Check,
   Server, Cloud, ArrowLeft, Save, CheckCircle, Pencil, Share2, Copy, X,
@@ -65,8 +65,17 @@ function groupByProvider(instances: SelfHostInstance[]) {
 
 /* ─── page ───────────────────────────────────────────────────── */
 export default function ProjectPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-zinc-950 flex items-center justify-center text-zinc-500 text-sm">Loading…</div>}>
+      <ProjectPageInner />
+    </Suspense>
+  );
+}
+
+function ProjectPageInner() {
   const { id } = useParams<{ id: string }>();
   const router  = useRouter();
+  const searchParams = useSearchParams();
 
   const [project, setProject]           = useState<{ name: string; description: string } | null>(null);
   const [categories, setCategories]     = useState<Category[]>([]);
@@ -90,6 +99,8 @@ export default function ProjectPage() {
   const [shareEdit, setShareEdit]       = useState(false);
   const [shareCopied, setShareCopied]   = useState(false);
   const [shareLoading, setShareLoading] = useState(false);
+  const [signInPrompt, setSignInPrompt] = useState<"save" | "share" | null>(null);
+  void setSignInPrompt; // reserved for future use
 
   // Only restore edges (user-drawn connections) from DB — nodes are always rebuilt from `selected`
   const [initEdges, setInitEdges] = useState<Edge[] | undefined>(undefined);
@@ -148,6 +159,13 @@ export default function ProjectPage() {
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [id]);
+
+  // Auto-open share panel when navigating from guest save+share flow
+  useEffect(() => {
+    if (searchParams.get("share") === "1" && !loading) {
+      setShareOpen(true);
+    }
+  }, [loading, searchParams]);
 
   const toggle = (set: Set<number>, itemId: number) => {
     const next = new Set(set);
