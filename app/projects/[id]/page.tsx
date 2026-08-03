@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ChevronRight, ChevronDown, Receipt, Tag, Trash2, Check,
-  Server, Cloud, ArrowLeft, Save, CheckCircle, Pencil,
+  Server, Cloud, ArrowLeft, Save, CheckCircle, Pencil, Share2, Copy, X,
 } from "lucide-react";
 import ArchDiagram, { type ArchDiagramHandle } from "@/app/components/ArchDiagram";
 import type { Edge } from "@xyflow/react";
@@ -82,9 +82,18 @@ export default function ProjectPage() {
     tool: Tool; plan: Plan; categoryName: string;
     inputM: number; outputM: number;
   } | null>(null);
+  const [planPopover, setPlanPopover]   = useState<{ toolId: number; catName: string } | null>(null);
+  const [modalTab, setModalTab]         = useState<"managed" | "selfhost">("managed");
+  const [modalProvider, setModalProvider] = useState<string>("");
+  const [shareOpen, setShareOpen]       = useState(false);
+  const [shareToken, setShareToken]     = useState<string | null>(null);
+  const [shareEdit, setShareEdit]       = useState(false);
+  const [shareCopied, setShareCopied]   = useState(false);
+  const [shareLoading, setShareLoading] = useState(false);
 
   // Only restore edges (user-drawn connections) from DB — nodes are always rebuilt from `selected`
   const [initEdges, setInitEdges] = useState<Edge[] | undefined>(undefined);
+  const [initDir,   setInitDir]   = useState<"LR" | "TB" | undefined>(undefined);
   const diagramRef = useRef<ArchDiagramHandle>(null);
 
   useEffect(() => {
@@ -95,9 +104,46 @@ export default function ProjectPage() {
       setCategories(Array.isArray(cats) ? cats : []);
       if (proj && !proj.error) {
         setProject({ name: proj.name, description: proj.description ?? "" });
-        if (proj.selections) setSelected(proj.selections);
+        if (proj.selections) {
+          // Deduplicate by toolId in case of legacy data with duplicates
+          const seen = new Set<number>();
+          const deduped = (proj.selections as SelectedItem[]).filter((s) => {
+            if (seen.has(s.toolId)) return false;
+            seen.add(s.toolId);
+            return true;
+          });
+
+          // Auto-resolve selections with no plan: pick popular managed plan or first self-host
+          const catList: Category[] = Array.isArray(cats) ? cats : [];
+          const resolved = deduped.map((s) => {
+            if (s.planId !== null && s.planId !== undefined && s.planId !== 0) return s;
+            // find tool in categories
+            let tool: Tool | undefined;
+            let catName = s.categoryName;
+            for (const cat of catList) {
+              const t = cat.tools.find((t) => t.id === s.toolId);
+              if (t) { tool = t; catName = cat.name; break; }
+            }
+            if (!tool) return s;
+            // Try popular managed plan first, then first managed plan
+            const managed = tool.plans.find((p) => p.is_popular) ?? tool.plans[0];
+            if (managed && !managed.is_token_based) {
+              return { ...s, planId: managed.id, planName: managed.name, price: managed.price, isSelfHosted: false, categoryName: catName };
+            }
+            // Fall back to recommended self-host instance
+            const instances = tool.self_hosting ?? [];
+            const inst = instances.find((i) => i.is_recommended) ?? instances[0];
+            if (inst) {
+              return { ...s, planId: -inst.instance_id, planName: `${inst.provider_label} · ${inst.instance_type}`, price: inst.price_monthly, isSelfHosted: true, provider: inst.provider, instanceType: inst.instance_type, categoryName: catName };
+            }
+            return s;
+          });
+
+          setSelected(resolved);
+        }
         // Only restore user-drawn edges — nodes are rebuilt from selections
         if (proj.diagram?.edges) setInitEdges(proj.diagram.edges);
+        if (proj.diagram?.dir)   setInitDir(proj.diagram.dir);
       }
       setLoading(false);
     }).catch(() => setLoading(false));
@@ -195,6 +241,41 @@ export default function ProjectPage() {
     id: s.toolId, name: s.toolName, price: s.price, categoryName: s.categoryName,
   }));
 
+  const generateShareLink = async () => {
+    setShareLoading(true);
+    const res = await fetch(`/api/projects/${id}/share`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ allowEdit: shareEdit }),
+    });
+    const data = await res.json();
+    setShareLoading(false);
+    if (data.token) setShareToken(data.token);
+  };
+
+  const toggleShareEdit = async (val: boolean) => {
+    setShareEdit(val);
+    if (!shareToken) return;
+    await fetch(`/api/projects/${id}/share`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ allowEdit: val }),
+    });
+  };
+
+  const revokeShare = async () => {
+    await fetch(`/api/projects/${id}/share`, { method: "DELETE" });
+    setShareToken(null);
+    setShareEdit(false);
+  };
+
+  const copyShareLink = () => {
+    if (!shareToken) return;
+    navigator.clipboard.writeText(`${window.location.origin}/share/${shareToken}`);
+    setShareCopied(true);
+    setTimeout(() => setShareCopied(false), 2000);
+  };
+
   const saveProject = async () => {
     setSaving(true);
     const diagram = diagramRef.current?.getDiagram() ?? { nodes: [], edges: [] };
@@ -238,6 +319,12 @@ export default function ProjectPage() {
 
         <div className="flex items-center gap-3">
           <span className="font-mono text-sm font-semibold text-white">{fmtUSD(total)}<span className="text-zinc-500 font-normal">/mo</span></span>
+          <button
+            onClick={() => setShareOpen(true)}
+            className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium border border-zinc-700 text-zinc-300 hover:text-white hover:border-zinc-500 transition-colors"
+          >
+            <Share2 size={14} /> Share
+          </button>
           <button
             onClick={saveProject}
             disabled={saving}
@@ -413,9 +500,56 @@ export default function ProjectPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {selected.map((sel) => (
+                      {selected.map((sel) => {
+                        let toolForSel: Tool | undefined;
+                        let catForSel = sel.categoryName;
+                        for (const cat of categories) {
+                          const t = cat.tools.find((t) => t.id === sel.toolId);
+                          if (t) { toolForSel = t; catForSel = cat.name; break; }
+                        }
+                        const hasSelfHostOpt = (toolForSel?.self_hosting?.length ?? 0) > 0;
+                        const hasPlans = (toolForSel?.plans?.length ?? 0) > 0;
+                        const canChange = hasPlans || hasSelfHostOpt;
+
+                        return (
                         <tr key={sel.toolId} className="border-b border-zinc-800/60 last:border-0 hover:bg-zinc-800/40 transition-colors">
-                          <td className="px-4 py-3 text-zinc-200 font-medium">{sel.toolName}</td>
+                          <td className="px-4 py-3">
+                            <button
+                              onClick={() => {
+                                if (!canChange || !toolForSel) return;
+                                const providers = groupByProvider(toolForSel.self_hosting ?? []);
+                                const defaultTab = hasPlans ? "managed" : "selfhost";
+                                setModalTab(defaultTab);
+                                setModalProvider(providers[0]?.provider ?? "");
+
+                                // If exactly one managed plan — apply immediately without modal
+                                if (toolForSel.plans.length === 1 && !hasSelfHostOpt) {
+                                  const plan = toolForSel.plans[0];
+                                  if (plan.is_token_based) {
+                                    setTokenModal({
+                                      tool: toolForSel,
+                                      plan,
+                                      categoryName: catForSel,
+                                      inputM:  sel.inputTokensM  ?? 1,
+                                      outputM: sel.outputTokensM ?? 0.5,
+                                    });
+                                  } else {
+                                    setSelected((prev) => prev.map((s) =>
+                                      s.toolId === sel.toolId
+                                        ? { ...s, planId: plan.id, planName: plan.name, price: plan.price, isSelfHosted: false, isTokenBased: false, provider: undefined, instanceType: undefined, inputTokensM: undefined, outputTokensM: undefined, priceInputPer1m: undefined, priceOutputPer1m: undefined }
+                                        : s
+                                    ));
+                                  }
+                                  return;
+                                }
+                                setPlanPopover({ toolId: sel.toolId, catName: catForSel });
+                              }}
+                              className={`text-zinc-200 font-medium text-left flex items-center gap-1.5 ${canChange ? "hover:text-indigo-300 transition-colors" : ""}`}
+                            >
+                              {sel.toolName}
+                              {canChange && <ChevronDown size={12} className="text-zinc-600" />}
+                            </button>
+                          </td>
                           <td className="px-4 py-3 text-zinc-400 text-xs">
                             <div>{sel.planName}</div>
                             {sel.isTokenBased && (
@@ -449,7 +583,8 @@ export default function ProjectPage() {
                             </div>
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -460,6 +595,7 @@ export default function ProjectPage() {
               ref={diagramRef}
               selected={archTools}
               initialEdges={initEdges}
+              initialDir={initDir}
             />
           </section>
 
@@ -499,6 +635,263 @@ export default function ProjectPage() {
           </aside>
         </div>
       </div>
+
+      {/* Share modal */}
+      {shareOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+          onClick={() => setShareOpen(false)}>
+          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <Share2 size={16} className="text-indigo-400" />
+                <h2 className="text-sm font-bold text-zinc-100">Share project</h2>
+              </div>
+              <button onClick={() => setShareOpen(false)} className="text-zinc-500 hover:text-zinc-300">
+                <X size={16} />
+              </button>
+            </div>
+
+            {!shareToken ? (
+              <>
+                <p className="text-xs text-zinc-500 mb-5 leading-relaxed">
+                  Generate a link so anyone can view this project&apos;s cost estimate and architecture diagram.
+                </p>
+                {/* Edit access toggle */}
+                <div className="flex items-center justify-between mb-6 px-3 py-3 rounded-lg bg-zinc-800 border border-zinc-700">
+                  <div>
+                    <p className="text-xs font-medium text-zinc-200">Allow editing</p>
+                    <p className="text-[10px] text-zinc-500 mt-0.5">Viewers can modify the project</p>
+                  </div>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setShareEdit((v) => !v)}
+                    onKeyDown={(e) => e.key === "Enter" && setShareEdit((v) => !v)}
+                    style={{
+                      width: 40, height: 22, borderRadius: 11, cursor: "pointer", flexShrink: 0,
+                      background: shareEdit ? "#4f46e5" : "#52525b",
+                      position: "relative", transition: "background 0.2s",
+                    }}
+                  >
+                    <span style={{
+                      position: "absolute", top: 3, left: shareEdit ? 19 : 3,
+                      width: 16, height: 16, borderRadius: "50%", background: "#fff",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.4)", transition: "left 0.2s",
+                      display: "block",
+                    }} />
+                  </div>
+                </div>
+                <button
+                  onClick={generateShareLink}
+                  disabled={shareLoading}
+                  className="w-full rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 px-4 py-2.5 text-sm font-medium text-white transition-colors"
+                >
+                  {shareLoading ? "Generating…" : "Generate link"}
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-[10px] text-zinc-500 mb-3">Anyone with this link can {shareEdit ? "view and edit" : "view"} this project.</p>
+                {/* Link box */}
+                <div className="flex items-center gap-2 mb-4 px-3 py-2.5 rounded-lg bg-zinc-800 border border-zinc-700">
+                  <span className="text-xs text-zinc-400 truncate flex-1 font-mono">
+                    {typeof window !== "undefined" ? `${window.location.origin}/share/${shareToken}` : `/share/${shareToken}`}
+                  </span>
+                  <button
+                    onClick={copyShareLink}
+                    className={`shrink-0 flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-colors ${shareCopied ? "text-emerald-400" : "text-indigo-400 hover:text-indigo-300"}`}
+                  >
+                    <Copy size={11} /> {shareCopied ? "Copied!" : "Copy"}
+                  </button>
+                </div>
+
+                {/* Edit access toggle */}
+                <div className="flex items-center justify-between mb-5 px-3 py-3 rounded-lg bg-zinc-800 border border-zinc-700">
+                  <div>
+                    <p className="text-xs font-medium text-zinc-200">Allow editing</p>
+                    <p className="text-[10px] text-zinc-500 mt-0.5">Viewers can modify the project</p>
+                  </div>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => toggleShareEdit(!shareEdit)}
+                    onKeyDown={(e) => e.key === "Enter" && toggleShareEdit(!shareEdit)}
+                    style={{
+                      width: 40, height: 22, borderRadius: 11, cursor: "pointer", flexShrink: 0,
+                      background: shareEdit ? "#4f46e5" : "#52525b",
+                      position: "relative", transition: "background 0.2s",
+                    }}
+                  >
+                    <span style={{
+                      position: "absolute", top: 3, left: shareEdit ? 19 : 3,
+                      width: 16, height: 16, borderRadius: "50%", background: "#fff",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.4)", transition: "left 0.2s",
+                      display: "block",
+                    }} />
+                  </div>
+                </div>
+
+                <button
+                  onClick={revokeShare}
+                  className="w-full rounded-lg border border-red-900 text-red-400 hover:bg-red-950 px-4 py-2 text-xs font-medium transition-colors"
+                >
+                  Revoke link
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Plan change modal */}
+      {planPopover && (() => {
+        let toolForModal: Tool | undefined;
+        for (const cat of categories) {
+          const t = cat.tools.find((t) => t.id === planPopover.toolId);
+          if (t) { toolForModal = t; break; }
+        }
+        if (!toolForModal) return null;
+        const sel = selected.find((s) => s.toolId === planPopover.toolId);
+        const selfProviders = groupByProvider(toolForModal.self_hosting ?? []);
+        const activeProvKey = modalProvider || selfProviders[0]?.provider || "";
+        const provData = selfProviders.find((p) => p.provider === activeProvKey);
+        const hasPlans = toolForModal.plans.length > 0;
+        const hasSelfHostOpt = selfProviders.length > 0;
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+            onClick={() => setPlanPopover(null)}>
+            <div className="bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden"
+              onClick={(e) => e.stopPropagation()}>
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
+                <div>
+                  <h2 className="text-sm font-bold text-zinc-100">{toolForModal.name}</h2>
+                  <p className="text-[11px] text-zinc-500 mt-0.5">Select a plan or deployment option</p>
+                </div>
+                <button onClick={() => setPlanPopover(null)} className="text-zinc-500 hover:text-zinc-300 transition-colors">
+                  <Pencil size={14} className="hidden" /><span className="text-lg leading-none">×</span>
+                </button>
+              </div>
+
+              {/* Tabs */}
+              {hasPlans && hasSelfHostOpt && (
+                <div className="flex gap-1 px-5 pt-3">
+                  <button
+                    onClick={() => setModalTab("managed")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${modalTab === "managed" ? "bg-indigo-600 text-white" : "text-zinc-500 hover:text-zinc-300 bg-zinc-800"}`}
+                  >
+                    <Cloud size={11} /> Managed
+                  </button>
+                  <button
+                    onClick={() => setModalTab("selfhost")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${modalTab === "selfhost" ? "bg-emerald-700 text-white" : "text-zinc-500 hover:text-zinc-300 bg-zinc-800"}`}
+                  >
+                    <Server size={11} /> Self-host
+                  </button>
+                </div>
+              )}
+
+              {/* Content */}
+              <div className="px-5 py-3 max-h-96 overflow-y-auto space-y-1">
+                {/* Managed plans */}
+                {(modalTab === "managed" || !hasSelfHostOpt) && hasPlans && toolForModal.plans.map((plan) => {
+                  const isCurrent = !sel?.isSelfHosted && sel?.planId === plan.id;
+                  return (
+                    <button key={plan.id}
+                      onClick={() => {
+                        setPlanPopover(null);
+                        if (plan.is_token_based) {
+                          setTokenModal({
+                            tool: toolForModal!,
+                            plan,
+                            categoryName: planPopover.catName,
+                            inputM:  sel?.inputTokensM  ?? 1,
+                            outputM: sel?.outputTokensM ?? 0.5,
+                          });
+                        } else {
+                          setSelected((prev) => prev.map((s) =>
+                            s.toolId === planPopover.toolId
+                              ? { ...s, planId: plan.id, planName: plan.name, price: plan.price, isSelfHosted: false, isTokenBased: false, provider: undefined, instanceType: undefined, inputTokensM: undefined, outputTokensM: undefined, priceInputPer1m: undefined, priceOutputPer1m: undefined }
+                              : s
+                          ));
+                        }
+                      }}
+                      className={`flex w-full items-start gap-3 px-3 py-2.5 rounded-lg text-xs transition-colors ${isCurrent ? "bg-indigo-700/30 text-indigo-200" : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"}`}
+                    >
+                      <div className="mt-0.5 w-3.5 shrink-0">
+                        {isCurrent && <Check size={12} className="text-indigo-400" />}
+                      </div>
+                      <div className="text-left flex-1">
+                        <div className="font-semibold flex items-center gap-1.5">
+                          {plan.name}
+                          {plan.is_popular && <span className="px-1.5 py-0.5 rounded text-[8px] bg-amber-500/20 text-amber-400 uppercase font-bold">Popular</span>}
+                        </div>
+                        {plan.description && <div className="text-[10px] text-zinc-500 mt-0.5 leading-tight">{plan.description}</div>}
+                        {plan.is_token_based ? (
+                          <div className="font-mono text-[10px] text-indigo-300/70 mt-1">${plan.price_input_per_1m}/M in · ${plan.price_output_per_1m}/M out</div>
+                        ) : (
+                          <div className="font-mono text-[10px] mt-1">{fmtUSD(plan.price)}/mo</div>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+
+                {/* Self-host */}
+                {(modalTab === "selfhost" || !hasPlans) && hasSelfHostOpt && (
+                  <div>
+                    {/* Provider tabs */}
+                    <div className="flex gap-1 mb-3 flex-wrap">
+                      {selfProviders.map((prov) => (
+                        <button key={prov.provider}
+                          onClick={() => setModalProvider(prov.provider)}
+                          style={{ borderColor: activeProvKey === prov.provider ? PROVIDER_COLORS[prov.provider] : "#3f3f46" }}
+                          className={`px-2.5 py-1 rounded text-[10px] font-semibold border transition-colors ${activeProvKey === prov.provider ? "text-white" : "text-zinc-500"}`}
+                        >
+                          {prov.providerLabel}
+                        </button>
+                      ))}
+                    </div>
+                    {provData?.instances.map((inst) => {
+                      const isCurrent = sel?.isSelfHosted && sel?.instanceType === inst.instance_type;
+                      return (
+                        <button key={inst.instance_id}
+                          onClick={() => {
+                            setPlanPopover(null);
+                            setSelected((prev) => prev.map((s) =>
+                              s.toolId === planPopover.toolId
+                                ? { ...s, planId: -inst.instance_id, planName: `${provData.providerLabel} · ${inst.instance_type}`, price: inst.price_monthly, isSelfHosted: true, provider: provData.provider, instanceType: inst.instance_type, isTokenBased: false, inputTokensM: undefined, outputTokensM: undefined, priceInputPer1m: undefined, priceOutputPer1m: undefined }
+                                : s
+                            ));
+                          }}
+                          className={`flex w-full items-start gap-3 px-3 py-2.5 rounded-lg text-xs transition-colors mb-1 ${isCurrent ? "bg-emerald-700/20 text-emerald-200" : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"}`}
+                        >
+                          <div className="mt-0.5 w-3.5 shrink-0">
+                            {isCurrent && <Check size={12} className="text-emerald-400" />}
+                          </div>
+                          <div className="text-left flex-1">
+                            <div className="font-semibold flex items-center gap-1.5">
+                              {inst.instance_type}
+                              {inst.is_recommended && <span className="px-1.5 py-0.5 rounded text-[8px] bg-emerald-500/20 text-emerald-400 uppercase font-bold">Recommended</span>}
+                            </div>
+                            <div className="text-[10px] text-zinc-500 mt-0.5">{inst.vcpu} vCPU · {inst.memory_gb} GB RAM · {inst.region}</div>
+                            <div className="font-mono text-[10px] mt-1 flex justify-between">
+                              <span>{fmtUSD(inst.price_monthly)}/mo</span>
+                              <span className="text-zinc-600">${inst.price_hourly}/hr</span>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Token pricing modal */}
       {tokenModal && (

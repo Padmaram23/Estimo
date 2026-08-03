@@ -32,10 +32,12 @@ interface SelectedTool extends Tool { categoryName: string }
 interface Props {
   selected: SelectedTool[];
   initialEdges?: Edge[];
+  initialDir?: Direction;
+  readOnly?: boolean;
 }
 
 export interface ArchDiagramHandle {
-  getDiagram: () => { nodes: Node[]; edges: Edge[] };
+  getDiagram: () => { nodes: Node[]; edges: Edge[]; dir: Direction };
 }
 type Direction = "LR" | "TB";
 type EdgeStyle = "default" | "straight" | "step" | "smoothstep";
@@ -85,6 +87,10 @@ function CategoryNode({ data }: NodeProps) {
       width: "100%", height: "100%",
       border: `1.5px solid ${d.color.border}`, borderRadius: 10, background: d.color.bg,
     }}>
+      <Handle type="target" position={Position.Left}
+        style={{ background: d.color.border, width: 8, height: 8, border: "none" }} />
+      <Handle type="target" position={Position.Top}
+        style={{ background: d.color.border, width: 8, height: 8, border: "none" }} />
       <div style={{
         padding: "7px 12px 5px", borderBottom: `1px solid ${d.color.border}33`,
         fontSize: 11, fontWeight: 700, color: d.color.text,
@@ -100,20 +106,49 @@ function CategoryNode({ data }: NodeProps) {
   );
 }
 
-/* ─── hub node ──────────────────────────────────────────────── */
-function HubNode({ data }: NodeProps) {
-  const d = data as { count: number };
+/* ─── entry node ─────────────────────────────────────────────── */
+function EntryNode() {
   return (
-    <div style={{ textAlign: "center", padding: "6px 10px" }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: "#c7d2fe" }}>Your Stack</div>
-      <div style={{ fontSize: 9, color: "#818cf8" }}>
-        {d.count} tool{d.count !== 1 ? "s" : ""}
-      </div>
+    <div style={{
+      background: "#052e16", border: "1.5px solid #22c55e",
+      borderRadius: 20, padding: "6px 18px", position: "relative",
+      display: "flex", alignItems: "center", gap: 6,
+    }}>
+      <span style={{
+        width: 7, height: 7, borderRadius: "50%",
+        background: "#22c55e", display: "inline-block", flexShrink: 0,
+      }} />
+      <span style={{ fontSize: 11, fontWeight: 700, color: "#86efac" }}>User / Input</span>
+      <Handle type="source" position={Position.Right}
+        style={{ background: "#22c55e", width: 9, height: 9, border: "none" }} />
+      <Handle type="source" position={Position.Bottom}
+        style={{ background: "#22c55e", width: 9, height: 9, border: "none" }} />
     </div>
   );
 }
 
-const nodeTypes = { toolNode: ToolNode, categoryNode: CategoryNode, hubNode: HubNode };
+/* ─── exit node ──────────────────────────────────────────────── */
+function ExitNode() {
+  return (
+    <div style={{
+      background: "#1e1b4b", border: "1.5px solid #6366f1",
+      borderRadius: 20, padding: "6px 18px", position: "relative",
+      display: "flex", alignItems: "center", gap: 6,
+    }}>
+      <Handle type="target" position={Position.Left}
+        style={{ background: "#6366f1", width: 9, height: 9, border: "none" }} />
+      <Handle type="target" position={Position.Top}
+        style={{ background: "#6366f1", width: 9, height: 9, border: "none" }} />
+      <span style={{
+        width: 7, height: 7, borderRadius: "50%",
+        background: "#6366f1", display: "inline-block", flexShrink: 0,
+      }} />
+      <span style={{ fontSize: 11, fontWeight: 700, color: "#c7d2fe" }}>Response / Output</span>
+    </div>
+  );
+}
+
+const nodeTypes = { toolNode: ToolNode, categoryNode: CategoryNode, entryNode: EntryNode, exitNode: ExitNode };
 
 /* ─── layout constants ───────────────────────────────────────── */
 const TOOL_W = 148;
@@ -123,8 +158,10 @@ const CAT_PAD_X   = 14;
 const CAT_PAD_TOP = 40;
 const CAT_PAD_BOT = 14;
 const CAT_GAP = 60;
-const HUB_W = 120;
-const HUB_H = 50;
+const ENTRY_W = 140;
+const ENTRY_H = 36;
+const EXIT_W  = 170;
+const EXIT_H  = 36;
 
 /* build only the nodes/edges for ONE category + its tools */
 function buildCategoryNodes(
@@ -141,8 +178,8 @@ function buildCategoryNodes(
 
   const isLR = dir === "LR";
   const defaultPos = isLR
-    ? { x: 40 + HUB_W + 80, y: catIndex * (h + CAT_GAP) }
-    : { x: catIndex * (w + CAT_GAP), y: 40 + HUB_H + 80 };
+    ? { x: 40 + ENTRY_W + 80, y: catIndex * (h + CAT_GAP) }
+    : { x: catIndex * (w + CAT_GAP), y: 40 + ENTRY_H + 80 };
 
   const catPos = existingCatPos ?? defaultPos;
 
@@ -169,31 +206,29 @@ function buildCategoryNodes(
   return nodes;
 }
 
-function hubNode(count: number): Node {
+function entryNode(dir: Direction): Node {
   return {
-    id: "hub",
-    type: "hubNode",
-    position: { x: 40, y: 40 },
-    data: { count },
-    style: {
-      width: HUB_W, height: HUB_H,
-      background: "#312e81", border: "1.5px solid #6366f1",
-      borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center",
-    },
+    id: "entry",
+    type: "entryNode",
+    position: dir === "LR" ? { x: 40, y: 40 } : { x: 40, y: 40 },
+    data: {},
+    style: { width: ENTRY_W, height: ENTRY_H },
   };
 }
 
-function hubEdge(catName: string): Edge {
-  const color = col(catName);
+function exitNode(dir: Direction, catCount: number, totalH: number): Node {
+  const isLR = dir === "LR";
   return {
-    id: `hub-cat-${catName}`,
-    source: "hub",
-    target: `cat-${catName}`,
-    animated: true,
-    deletable: false,
-    style: { stroke: color.border, strokeWidth: 1.5 },
+    id: "exit",
+    type: "exitNode",
+    position: isLR
+      ? { x: 40 + ENTRY_W + 80 + (CAT_PAD_X * 2 + TOOL_W) + 80, y: 40 }
+      : { x: 40, y: 40 + ENTRY_H + 80 + totalH + 80 },
+    data: {},
+    style: { width: EXIT_W, height: EXIT_H },
   };
 }
+
 
 /* ─── edge edit panel ────────────────────────────────────────── */
 interface EdgePanelProps {
@@ -337,16 +372,16 @@ function EdgePanel({ edge, onUpdate, onDelete, onClose }: EdgePanelProps) {
 
 /* ─── main component ─────────────────────────────────────────── */
 const ArchDiagram = forwardRef<ArchDiagramHandle, Props>(function ArchDiagram(
-  { selected, initialEdges }, ref
+  { selected, initialEdges, initialDir, readOnly = false }, ref
 ) {
-  const [dir, setDir] = useState<Direction>("LR");
+  const [dir, setDir] = useState<Direction>(initialDir ?? "LR");
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(initialEdges ?? []);
   const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
 
   useImperativeHandle(ref, () => ({
-    getDiagram: () => ({ nodes, edges }),
-  }), [nodes, edges]);
+    getDiagram: () => ({ nodes, edges, dir }),
+  }), [nodes, edges, dir]);
 
   // Track which category names and tool ids are currently in the diagram
   const prevCatNames = useRef<Set<string>>(new Set());
@@ -369,7 +404,7 @@ const ArchDiagram = forwardRef<ArchDiagramHandle, Props>(function ArchDiagram(
     const removedTools = [...prevToolIds.current].filter((id) => !newToolIds.has(id));
 
     const removeIds = new Set<string>([
-      ...removedCats.flatMap((c) => [`cat-${c}`, `hub-cat-${c}`]),
+      ...removedCats.map((c) => `cat-${c}`),
       ...removedTools.map((id) => `tool-${id}`),
     ]);
 
@@ -392,27 +427,27 @@ const ArchDiagram = forwardRef<ArchDiagramHandle, Props>(function ArchDiagram(
     const newNodes: Node[] = [];
     const newEdges: Edge[] = [];
 
-    // Hub node — always ensure it exists
+    // Entry + Exit nodes — always ensure they exist
     setNodes((ns) => {
-      const hasHub = ns.some((n) => n.id === "hub");
-      if (!hasHub && selected.length > 0) {
-        return [hubNode(selected.length), ...ns];
+      let updated = ns;
+      const hasEntry = ns.some((n) => n.id === "entry");
+      const hasExit  = ns.some((n) => n.id === "exit");
+      // Compute total height for exit positioning in TB mode
+      let totalH = 0;
+      for (const tools of groups.values()) {
+        totalH += CAT_PAD_TOP + tools.length * (TOOL_H + TOOL_GAP) - TOOL_GAP + CAT_PAD_BOT + CAT_GAP;
       }
-      // Update hub label count
-      return ns.map((n) =>
-        n.id === "hub"
-          ? { ...n, data: { count: selected.length } }
-          : n
-      );
+      if (!hasEntry && selected.length > 0) updated = [entryNode(dir), ...updated];
+      if (!hasExit  && selected.length > 0) updated = [...updated, exitNode(dir, groups.size, totalH)];
+      return updated;
     });
 
-    // Add new categories
+    // Add new categories (no auto-connections — user draws their own edges)
     addedCats.forEach((catName) => {
       const tools = groups.get(catName)!;
       const idx = catIndexRef.current.get(catName)!;
       const catNodes = buildCategoryNodes(catName, tools, idx, dir);
       newNodes.push(...catNodes);
-      newEdges.push(hubEdge(catName));
     });
 
     // Add tools that belong to existing categories (category already in diagram)
@@ -463,9 +498,25 @@ const ArchDiagram = forwardRef<ArchDiagramHandle, Props>(function ArchDiagram(
   // Direction change: reposition only category nodes that haven't been manually moved
   const handleDirChange = (newDir: Direction) => {
     setDir(newDir);
-    // Rebuild positions for all cats using their stable index
-    setNodes((ns) =>
-      ns.map((n) => {
+    setNodes((ns) => {
+      // compute total height for exit node TB positioning
+      let totalH = 0;
+      const catNodes = ns.filter((n) => n.id.startsWith("cat-"));
+      catNodes.forEach((n) => { totalH += ((n.style?.height as number) ?? 120) + CAT_GAP; });
+
+      return ns.map((n) => {
+        if (n.id === "entry") {
+          return { ...n, position: { x: 40, y: 40 } };
+        }
+        if (n.id === "exit") {
+          const isLR = newDir === "LR";
+          return {
+            ...n,
+            position: isLR
+              ? { x: 40 + ENTRY_W + 80 + (CAT_PAD_X * 2 + TOOL_W) + 80, y: 40 }
+              : { x: 40, y: 40 + ENTRY_H + 80 + totalH + 80 },
+          };
+        }
         if (!n.id.startsWith("cat-")) return n;
         const catName = n.id.replace("cat-", "");
         const idx = catIndexRef.current.get(catName) ?? 0;
@@ -473,11 +524,11 @@ const ArchDiagram = forwardRef<ArchDiagramHandle, Props>(function ArchDiagram(
         const w = (n.style?.width as number) ?? 180;
         const isLR = newDir === "LR";
         const newPos = isLR
-          ? { x: 40 + HUB_W + 80, y: idx * (h + CAT_GAP) }
-          : { x: idx * (w + CAT_GAP), y: 40 + HUB_H + 80 };
+          ? { x: 40 + ENTRY_W + 80, y: idx * (h + CAT_GAP) }
+          : { x: idx * (w + CAT_GAP), y: 40 + ENTRY_H + 80 };
         return { ...n, position: newPos };
-      })
-    );
+      });
+    });
   };
 
   const onConnect = useCallback(
@@ -553,7 +604,7 @@ const ArchDiagram = forwardRef<ArchDiagramHandle, Props>(function ArchDiagram(
           </h2>
         </div>
         <div className="flex items-center gap-3">
-          {selectedEdge && (
+          {!readOnly && selectedEdge && (
             <span className="flex items-center gap-1 text-[10px] text-indigo-400">
               <Pencil size={10} /> Editing connection
             </span>
@@ -585,20 +636,27 @@ const ArchDiagram = forwardRef<ArchDiagramHandle, Props>(function ArchDiagram(
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={handleEdgeChanges}
-          onConnect={onConnect}
-          onEdgeClick={onEdgeClick}
+          onConnect={readOnly ? undefined : onConnect}
+          onEdgeClick={readOnly ? undefined : onEdgeClick}
           onPaneClick={onPaneClick}
           nodeTypes={nodeTypes}
+          nodesDraggable={!readOnly}
+          nodesConnectable={!readOnly}
+          elementsSelectable={!readOnly}
           fitView
           fitViewOptions={{ padding: 0.25 }}
           colorMode="dark"
-          deleteKeyCode="Backspace"
+          deleteKeyCode={readOnly ? null : "Backspace"}
           elevateEdgesOnSelect
         >
           <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#27272a" />
           <Controls />
           <MiniMap
-            nodeColor={(n) => n.id === "hub" ? "#6366f1" : n.id.startsWith("cat-") ? "#27272a" : "#09090b"}
+            nodeColor={(n) =>
+              n.id === "entry" ? "#22c55e" :
+              n.id === "exit"  ? "#6366f1" :
+              n.id.startsWith("cat-") ? "#27272a" : "#09090b"
+            }
             style={{ background: "#18181b", border: "1px solid #27272a" }}
           />
           <Panel position="bottom-left">
