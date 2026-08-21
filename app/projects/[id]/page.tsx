@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState, Suspense } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronRight, ChevronDown, Receipt, Tag, Trash2, Check,
-  Server, Cloud, ArrowLeft, Save, CheckCircle, Pencil, Share2, Copy, X,
+  Server, Cloud, ArrowLeft, Save, CheckCircle, Pencil, Share2, Copy, X, Activity,
 } from "lucide-react";
 import ArchDiagram, { type ArchDiagramHandle } from "@/app/components/ArchDiagram";
 import type { Edge } from "@xyflow/react";
@@ -65,8 +65,17 @@ function groupByProvider(instances: SelfHostInstance[]) {
 
 /* ─── page ───────────────────────────────────────────────────── */
 export default function ProjectPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-zinc-950 flex items-center justify-center text-zinc-500 text-sm">Loading…</div>}>
+      <ProjectPageInner />
+    </Suspense>
+  );
+}
+
+function ProjectPageInner() {
   const { id } = useParams<{ id: string }>();
   const router  = useRouter();
+  const searchParams = useSearchParams();
 
   const [project, setProject]           = useState<{ name: string; description: string } | null>(null);
   const [categories, setCategories]     = useState<Category[]>([]);
@@ -78,6 +87,8 @@ export default function ProjectPage() {
   const [loading, setLoading]           = useState(true);
   const [saving, setSaving]             = useState(false);
   const [saved, setSaved]               = useState(false);
+  const [autoSave, setAutoSave]         = useState(true);
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [tokenModal, setTokenModal]     = useState<{
     tool: Tool; plan: Plan; categoryName: string;
     inputM: number; outputM: number;
@@ -90,6 +101,15 @@ export default function ProjectPage() {
   const [shareEdit, setShareEdit]       = useState(false);
   const [shareCopied, setShareCopied]   = useState(false);
   const [shareLoading, setShareLoading] = useState(false);
+  const [signInPrompt, setSignInPrompt] = useState<"save" | "share" | null>(null);
+  void setSignInPrompt; // reserved for future use
+
+  // ── Unit economics metric ────────────────────────────────
+  const [unitLabel, setUnitLabel]       = useState("");
+  const [baseVolume, setBaseVolume]     = useState<number | "">(0);
+  const [targetVolume, setTargetVolume] = useState<number | "">("");
+
+  // Predefined multiplier defaults are applied inline when project loads
 
   // Only restore edges (user-drawn connections) from DB — nodes are always rebuilt from `selected`
   const [initEdges, setInitEdges] = useState<Edge[] | undefined>(undefined);
@@ -100,10 +120,42 @@ export default function ProjectPage() {
     Promise.all([
       fetch("/api/categories").then((r) => r.json()),
       fetch(`/api/projects/${id}`).then((r) => r.json()),
-    ]).then(([cats, proj]) => {
+      fetch("/api/templates").then((r) => r.json()),
+    ]).then(([cats, proj, tpls]) => {
       setCategories(Array.isArray(cats) ? cats : []);
       if (proj && !proj.error) {
         setProject({ name: proj.name, description: proj.description ?? "" });
+
+        // Match multiplier defaults from templates DB first, then fall back to keyword match
+        const projText = (proj.name + " " + (proj.description ?? "")).toLowerCase();
+        const matchedTpl = Array.isArray(tpls)
+          ? tpls.find((t: { name: string; multiplier_label?: string }) =>
+              t.multiplier_label && projText.includes(t.name.toLowerCase())
+            )
+          : null;
+
+        if (matchedTpl?.multiplier_label) {
+          setUnitLabel(matchedTpl.multiplier_label);
+          setBaseVolume(matchedTpl.multiplier_base_volume ?? 1000);
+          setTargetVolume(matchedTpl.multiplier_target_volume ?? 5000);
+        } else {
+          // Keyword fallback
+          for (const def of [
+            { match: /resume/,            label: "resume",       base: 500,    target: 2000  },
+            { match: /image|vision/,      label: "image",        base: 2000,   target: 10000 },
+            { match: /document|doc|rag/,  label: "document",     base: 1000,   target: 5000  },
+            { match: /chat|assistant/,    label: "conversation", base: 1000,   target: 5000  },
+            { match: /agent/,             label: "task",         base: 500,    target: 2000  },
+            { match: /search/,            label: "search query", base: 10000,  target: 50000 },
+          ]) {
+            if (def.match.test(projText)) {
+              setUnitLabel(def.label);
+              setBaseVolume(def.base);
+              setTargetVolume(def.target);
+              break;
+            }
+          }
+        }
         if (proj.selections) {
           // Deduplicate by toolId in case of legacy data with duplicates
           const seen = new Set<number>();
@@ -148,6 +200,13 @@ export default function ProjectPage() {
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [id]);
+
+  // Auto-open share panel when navigating from guest save+share flow
+  useEffect(() => {
+    if (searchParams.get("share") === "1" && !loading) {
+      setShareOpen(true);
+    }
+  }, [loading, searchParams]);
 
   const toggle = (set: Set<number>, itemId: number) => {
     const next = new Set(set);
@@ -276,6 +335,9 @@ export default function ProjectPage() {
     setTimeout(() => setShareCopied(false), 2000);
   };
 
+  // Use a ref so triggerAutoSave always calls the latest saveProject without stale closure
+  const saveProjectRef = useRef<() => Promise<void>>(async () => {});
+
   const saveProject = async () => {
     setSaving(true);
     const diagram = diagramRef.current?.getDiagram() ?? { nodes: [], edges: [] };
@@ -293,6 +355,26 @@ export default function ProjectPage() {
     setTimeout(() => setSaved(false), 2500);
   };
 
+  // Keep ref in sync with latest saveProject
+  useEffect(() => {
+    saveProjectRef.current = saveProject;
+  });
+
+  const triggerAutoSave = useCallback(() => {
+    if (!autoSave) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => { saveProjectRef.current(); }, 2000);
+  }, [autoSave]);
+
+  // Auto-save: debounce 2s after selections change
+  useEffect(() => {
+    if (!autoSave || loading) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => { saveProjectRef.current(); }, 2000);
+    return () => {
+      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    };
+  }, [selected, autoSave, loading]);
   if (loading) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center text-zinc-500 text-sm">
@@ -319,6 +401,31 @@ export default function ProjectPage() {
 
         <div className="flex items-center gap-3">
           <span className="font-mono text-sm font-semibold text-white">{fmtUSD(total)}<span className="text-zinc-500 font-normal">/mo</span></span>
+
+          {/* Auto-save toggle */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-zinc-500">Auto-save</span>
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => setAutoSave(v => !v)}
+              onKeyDown={e => e.key === "Enter" && setAutoSave(v => !v)}
+              title={autoSave ? "Auto-save on" : "Auto-save off"}
+              style={{
+                width: 34, height: 18, borderRadius: 9, cursor: "pointer", flexShrink: 0,
+                background: autoSave ? "#4f46e5" : "#3f3f46",
+                position: "relative", transition: "background 0.2s",
+              }}
+            >
+              <span style={{
+                position: "absolute", top: 2, left: autoSave ? 16 : 2,
+                width: 14, height: 14, borderRadius: "50%", background: "#fff",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.4)", transition: "left 0.2s",
+                display: "block",
+              }} />
+            </div>
+          </div>
+
           <button
             onClick={() => setShareOpen(true)}
             className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium border border-zinc-700 text-zinc-300 hover:text-white hover:border-zinc-500 transition-colors"
@@ -596,6 +703,7 @@ export default function ProjectPage() {
               selected={archTools}
               initialEdges={initEdges}
               initialDir={initDir}
+              onChange={triggerAutoSave}
             />
           </section>
 
@@ -632,6 +740,105 @@ export default function ProjectPage() {
                 <p className="mt-4 text-xs text-indigo-400/60 text-center">Select plans to see the total</p>
               )}
             </div>
+
+            {/* Unit economics multiplier */}
+            {selected.length > 0 && total > 0 && (
+              <div className="mt-4 rounded-xl bg-zinc-900 border border-zinc-800 p-4">
+                <div className="flex items-center gap-2 mb-3 text-zinc-400">
+                  <Activity size={13} strokeWidth={1.75} />
+                  <span className="text-xs font-semibold uppercase tracking-wider">Cost Multiplier</span>
+                </div>
+
+                {/* Unit label */}
+                <div className="mb-3">
+                  <label className="block text-[10px] text-zinc-500 mb-1">What are you processing?</label>
+                  <input
+                    value={unitLabel}
+                    onChange={e => setUnitLabel(e.target.value)}
+                    placeholder="e.g. resume, document, image…"
+                    className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-xs text-zinc-200 placeholder-zinc-600 outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                {/* Base volume */}
+                <div className="mb-3">
+                  <label className="block text-[10px] text-zinc-500 mb-1">Current estimate based on</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number" min="1"
+                      value={baseVolume === 0 ? "" : baseVolume}
+                      onChange={e => setBaseVolume(e.target.value === "" ? "" : Math.max(1, Number(e.target.value)))}
+                      placeholder="e.g. 1000"
+                      className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-xs font-mono text-zinc-200 placeholder-zinc-600 outline-none focus:border-indigo-500"
+                    />
+                    <span className="text-[10px] text-zinc-500 shrink-0">/mo</span>
+                  </div>
+                </div>
+
+                {/* Only show scale + results once label and base are set */}
+                {unitLabel.trim() && baseVolume ? (
+                  <>
+                    <div className="mb-4">
+                      <label className="block text-[10px] text-zinc-500 mb-1">Scale to</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number" min="1"
+                          value={targetVolume}
+                          onChange={e => setTargetVolume(e.target.value === "" ? "" : Math.max(1, Number(e.target.value)))}
+                          placeholder="e.g. 5000"
+                          className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-xs font-mono text-zinc-200 placeholder-zinc-600 outline-none focus:border-indigo-500"
+                        />
+                        <span className="text-[10px] text-zinc-500 shrink-0">/mo</span>
+                      </div>
+                    </div>
+
+                    {/* Results — always show cost/unit; show delta only when target is set */}
+                    {(() => {
+                      const base = Number(baseVolume);
+                      const costPerUnit = total / base;
+                      const target = Number(targetVolume);
+                      const targetCost = target ? costPerUnit * target : null;
+                      const delta = targetCost !== null ? targetCost - total : null;
+                      const multiplier = target ? target / base : null;
+                      const isUp = delta !== null && delta > 0;
+                      return (
+                        <div className="space-y-2 pt-3 border-t border-zinc-800">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] text-zinc-500">Cost per {unitLabel}</span>
+                            <span className="text-xs font-mono text-zinc-300">{fmtUSD(costPerUnit)}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] text-zinc-500">{base.toLocaleString()} {unitLabel}s/mo</span>
+                            <span className="text-xs font-mono text-indigo-300">{fmtUSD(total)}/mo</span>
+                          </div>
+                          {targetCost !== null && delta !== null && multiplier !== null && (
+                            <>
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] text-zinc-500">{target.toLocaleString()} {unitLabel}s/mo</span>
+                                <span className="text-xs font-mono text-zinc-300">{fmtUSD(targetCost)}/mo</span>
+                              </div>
+                              <div className="flex items-center justify-between rounded-lg px-2.5 py-2 mt-1"
+                                style={{ background: isUp ? "#1c0a0a" : "#052e16", border: `1px solid ${isUp ? "#7f1d1d" : "#14532d"}` }}>
+                                <span className="text-[10px]" style={{ color: isUp ? "#f87171" : "#86efac" }}>
+                                  {multiplier.toFixed(1)}× volume
+                                </span>
+                                <span className="text-xs font-mono font-semibold" style={{ color: isUp ? "#f87171" : "#86efac" }}>
+                                  {isUp ? "+" : ""}{fmtUSD(delta)}/mo
+                                </span>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </>
+                ) : (
+                  <p className="text-[10px] text-zinc-600 text-center py-2">
+                    Fill in what you&apos;re processing and the volume to see cost projections
+                  </p>
+                )}
+              </div>
+            )}
           </aside>
         </div>
       </div>

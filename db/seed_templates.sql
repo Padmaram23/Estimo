@@ -311,3 +311,26 @@ INSERT INTO template_edges (template_id, source_tool, target_tool, label, color,
   ((SELECT id FROM templates WHERE name = 'Resume Screening System'), 'OpenAI (GPT-4.1, o3, o4)', 'LangSmith',                'Observe',          '#71717a', FALSE);
 
 COMMIT;
+
+-- ==========================
+-- Cost Multiplier Defaults per Template
+-- ==========================
+
+BEGIN;
+
+UPDATE templates SET multiplier_label = 'document',     multiplier_base_volume = 1000
+WHERE name = 'Document Assistant';
+
+UPDATE templates SET multiplier_label = 'document',     multiplier_base_volume = 1000
+WHERE name = 'Document Assistant (Enterprise RAG)';
+
+UPDATE templates SET multiplier_label = 'image',        multiplier_base_volume = 2000
+WHERE name = 'Image Processing + AI Search';
+
+UPDATE templates SET multiplier_label = 'document',     multiplier_base_volume = 1000
+WHERE name = 'Document Assistant New';
+
+UPDATE templates SET multiplier_label = 'resume',       multiplier_base_volume = 500
+WHERE name = 'Resume Screening System';
+
+COMMIT;
