@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession, signIn, signOut } from "next-auth/react";
 import {
-  FolderOpen, Plus, Trash2, Clock, DollarSign, X,
+  FolderOpen, Plus, Trash2, Clock, X,
   ChevronRight, ChevronDown, Check, LayoutTemplate, Search, Bot,
   MessageCircle, Shuffle, FileText, Zap, Image as ImageIcon,
   Layers, FileSearch, LogOut, Lock, LayoutDashboard, Cpu, BarChart3,
@@ -28,6 +28,9 @@ interface Template {
   category: string; total_monthly: number;
   selections: TemplateSelection[];
   diagram?: { nodes: object[]; edges: object[] };
+  multiplier_label?: string;
+  multiplier_base_volume?: number;
+  multiplier_target_volume?: number;
 }
 
 const fmtUSD = (n: number) =>
@@ -144,16 +147,22 @@ function ProjectsPageInner() {
   };
 
   const proceedToDetails = (tpl: Template | null) => {
-    // Guest + blank project: skip everything, go straight to the tool explorer
-    if (!isAuthed && tpl === null) {
+    // Guest: go straight to guest page, store template if selected
+    if (!isAuthed) {
       setShow(false);
+      if (tpl) {
+        console.log(tpl)
+        sessionStorage.setItem("guestTemplate", JSON.stringify(tpl));
+        if (tpl.multiplier_label) sessionStorage.setItem("guestMultiplier", JSON.stringify({
+          label: tpl.multiplier_label,
+          base: tpl.multiplier_base_volume,
+          target: tpl.multiplier_target_volume ?? undefined,
+        }));
+      } else {
+        sessionStorage.removeItem("guestTemplate");
+        sessionStorage.removeItem("guestMultiplier");
+      }
       router.push("/projects/guest");
-      return;
-    }
-    // Templates require sign-in
-    if (tpl && !isAuthed) {
-      setSelectedTemplate(tpl);
-      setStep("signin-prompt");
       return;
     }
     // Authenticated + blank project: show name/description form
@@ -342,19 +351,16 @@ function ProjectsPageInner() {
                   </button>
 
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-3">
-                    Templates <span className="text-zinc-600 normal-case font-normal ml-1">— sign in to use</span>
+                    Templates
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {templates.map((tpl) => (
                       <button key={tpl.id} onClick={() => proceedToDetails(tpl)}
-                        className="relative flex items-start gap-3 rounded-xl border border-zinc-700/60 bg-zinc-800/30 p-4 text-left hover:border-indigo-600/60 hover:bg-indigo-600/5 transition-all group opacity-80 hover:opacity-100">
-                        <div className="absolute top-2.5 right-2.5">
-                          <Lock size={11} className="text-zinc-600 group-hover:text-indigo-500 transition-colors" />
-                        </div>
+                        className="flex items-start gap-3 rounded-xl border border-zinc-700 bg-zinc-800/40 p-4 text-left hover:border-indigo-600 hover:bg-indigo-600/10 transition-all group">
                         <div className="rounded-lg bg-indigo-600/20 p-2 text-indigo-400 shrink-0 mt-0.5">
                           {ICON_MAP[tpl.icon] ?? <LayoutTemplate size={18} strokeWidth={1.75} />}
                         </div>
-                        <div className="min-w-0 flex-1 pr-4">
+                        <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold text-zinc-200 truncate">{tpl.name}</span>
                             <span className="text-[10px] font-mono text-indigo-300 shrink-0">{fmtUSD(tpl.total_monthly)}/mo</span>
@@ -474,52 +480,74 @@ function ProjectsPageInner() {
 
       <section className="relative z-10 px-8 py-8 max-w-5xl mx-auto min-h-[calc(100vh-64px)]">
         {loading ? (
-          <div className="text-zinc-500 text-sm">Loading…</div>
+          <div className="flex items-center justify-center py-32 text-zinc-500 text-sm">Loading…</div>
         ) : projects.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-32 text-center">
-            <FolderOpen size={40} className="text-zinc-700 mb-4" strokeWidth={1.5} />
-            <p className="text-zinc-400 text-base font-medium">No projects yet</p>
-            <p className="text-zinc-600 text-sm mt-1 mb-6">Create your first project to start estimating costs.</p>
-            <button onClick={openCreate} className="flex items-center gap-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 px-4 py-2 text-sm font-medium text-white transition-colors">
-              <Plus size={15} /> New Project
+            <div className="w-16 h-16 rounded-2xl bg-indigo-600/10 border border-indigo-600/20 flex items-center justify-center mb-5">
+              <FolderOpen size={28} className="text-indigo-400" strokeWidth={1.5} />
+            </div>
+            <p className="text-zinc-200 text-base font-semibold mb-1">No projects yet</p>
+            <p className="text-zinc-500 text-sm mb-8 max-w-xs leading-relaxed">Start by creating a blank project or pick a template to get your first AI cost estimate.</p>
+            <button onClick={openCreate} className="flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 px-6 py-3 text-sm font-medium text-white transition-colors shadow-lg shadow-indigo-900/30">
+              <Plus size={15} /> Create your first project
             </button>
           </div>
         ) : (
           <>
-            <p className="text-xs text-zinc-500 mb-5 uppercase tracking-wider font-semibold">{projects.length} project{projects.length !== 1 ? "s" : ""}</p>
+            {/* Summary bar */}
+            <div className="flex items-end justify-between mb-8">
+              <div>
+                <p className="text-zinc-500 text-xs uppercase tracking-widest font-semibold mb-1">
+                  {session?.user?.name ? `Welcome back, ${session.user.name.split(" ")[0]}` : "Your projects"}
+                </p>
+                <h1 className="text-2xl font-bold text-zinc-100">{projects.length} project{projects.length !== 1 ? "s" : ""}</h1>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-zinc-500 mb-0.5">Total estimated spend</p>
+                <p className="font-mono text-xl font-semibold text-indigo-300">
+                  {fmtUSD(projects.reduce((s, p) => s + Number(p.total_monthly), 0))}<span className="text-zinc-500 text-sm font-normal">/mo</span>
+                </p>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {projects.map((project) => (
                 <div key={project.id} onClick={() => router.push(`/projects/${project.id}`)}
-                  className="group relative cursor-pointer rounded-xl border border-zinc-800 bg-zinc-900 p-5 hover:border-indigo-700 hover:bg-zinc-800/60 transition-all">
+                  className="group relative cursor-pointer rounded-xl border border-zinc-800 bg-zinc-900 p-5 hover:border-indigo-600/60 hover:bg-zinc-800/60 transition-all hover:shadow-lg hover:shadow-indigo-900/10">
                   <button onClick={(e) => deleteProject(project.id, e)}
                     className="absolute top-3 right-3 text-zinc-700 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all" aria-label="Delete">
                     <Trash2 size={14} />
                   </button>
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 rounded-lg bg-indigo-600/20 p-2">
+                  <div className="flex items-start gap-3 mb-4">
+                    <div className="shrink-0 rounded-lg bg-indigo-600/15 border border-indigo-600/20 p-2.5">
                       <FolderOpen size={16} className="text-indigo-400" strokeWidth={1.75} />
                     </div>
-                    <div className="min-w-0">
-                      <h2 className="font-semibold text-zinc-100 truncate">{project.name}</h2>
-                      {project.description && <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{project.description}</p>}
+                    <div className="min-w-0 flex-1 pr-4">
+                      <h2 className="font-semibold text-zinc-100 truncate leading-snug">{project.name}</h2>
+                      {project.description
+                        ? <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2 leading-relaxed">{project.description}</p>
+                        : <p className="text-xs text-zinc-600 mt-0.5 italic">No description</p>
+                      }
                     </div>
                   </div>
-                  <div className="mt-4 flex items-center justify-between text-xs text-zinc-500">
-                    <span className="flex items-center gap-1">
-                      <DollarSign size={11} />
-                      <span className="font-mono text-zinc-300">{fmtUSD(project.total_monthly)}/mo</span>
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock size={11} />
+                  <div className="border-t border-zinc-800 pt-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-0.5">Monthly cost</p>
+                      <span className="font-mono text-sm font-semibold text-zinc-100">{fmtUSD(project.total_monthly)}</span>
+                    </div>
+                    <span className="flex items-center gap-1 text-[10px] text-zinc-600">
+                      <Clock size={10} />
                       {fmtDate(project.updated_at)}
                     </span>
                   </div>
                 </div>
               ))}
               <button onClick={openCreate}
-                className="rounded-xl border border-dashed border-zinc-700 bg-zinc-900/40 p-5 flex flex-col items-center justify-center gap-2 text-zinc-600 hover:text-zinc-400 hover:border-zinc-500 transition-all min-h-[120px]">
-                <Plus size={20} strokeWidth={1.5} />
-                <span className="text-xs">New Project</span>
+                className="rounded-xl border border-dashed border-zinc-800 bg-zinc-900/30 p-5 flex flex-col items-center justify-center gap-2.5 text-zinc-600 hover:text-zinc-400 hover:border-zinc-600 hover:bg-zinc-900/60 transition-all min-h-[148px]">
+                <div className="w-8 h-8 rounded-lg border border-dashed border-zinc-700 flex items-center justify-center">
+                  <Plus size={16} strokeWidth={1.5} />
+                </div>
+                <span className="text-xs font-medium">New Project</span>
               </button>
             </div>
           </>

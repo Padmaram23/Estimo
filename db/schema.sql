@@ -146,6 +146,9 @@ CREATE TABLE IF NOT EXISTS templates (
   description TEXT,
   icon        VARCHAR(50) DEFAULT 'layout',   -- lucide icon name
   category    VARCHAR(100),                   -- e.g. "RAG", "Agent", "Chat"
+  multiplier_label VARCHAR(100),              -- e.g. "resume", "image"
+  multiplier_base_volume INTEGER,             -- base volume for current estimate
+  multiplier_target_volume INTEGER,           -- suggested scale-to volume
   created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   is_deleted  BOOLEAN DEFAULT FALSE
 );

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn, useSession } from "next-auth/react";
 import {
   ChevronRight, ChevronDown, Receipt, Tag, Check,
-  Server, Cloud, ArrowLeft, Save, Share2, Lock, X,
+  Server, Cloud, ArrowLeft, Save, Share2, Lock, X, Activity,
 } from "lucide-react";
 import ArchDiagram, { type ArchDiagramHandle } from "@/app/components/ArchDiagram";
 
@@ -74,6 +74,9 @@ function GuestProjectPageInner() {
   const [modalTab, setModalTab]           = useState<"managed" | "selfhost">("managed");
   const [modalProvider, setModalProvider] = useState<string>("");
   const diagramRef = useRef<ArchDiagramHandle>(null);
+  const [unitLabel, setUnitLabel]       = useState("");
+  const [baseVolume, setBaseVolume]     = useState<number | "">(0);
+  const [targetVolume, setTargetVolume] = useState<number | "">("");
 
   // Save/share flow state
   const [saveModal, setSaveModal]   = useState<"signin" | "details" | null>(null);
@@ -86,6 +89,51 @@ function GuestProjectPageInner() {
   useEffect(() => {
     fetch("/api/categories").then(r => r.json()).then(cats => {
       setCategories(Array.isArray(cats) ? cats : []);
+
+      // Load template from sessionStorage if present
+      const raw = sessionStorage.getItem("guestTemplate");
+      if (raw) {
+        try {
+          const tpl = JSON.parse(raw) as {
+            name: string;
+            selections: Array<{
+              toolId: number; toolName: string; categoryName: string;
+              planId: number; planName: string; price: number;
+              isSelfHosted: boolean; provider?: string; instanceType?: string;
+              isTokenBased?: boolean; inputTokensM?: number; outputTokensM?: number;
+              priceInputPer1m?: number; priceOutputPer1m?: number;
+            }>;
+          };
+          const seen = new Set<number>();
+          const deduped = tpl.selections.filter(s => {
+            if (seen.has(s.toolId)) return false;
+            seen.add(s.toolId);
+            return true;
+          });
+          setSelected(deduped.map(s => ({
+            toolId: s.toolId, toolName: s.toolName, categoryName: s.categoryName,
+            planId: s.planId ?? 0, planName: s.planName ?? "", price: s.price ?? 0,
+            isSelfHosted: s.isSelfHosted ?? false,
+            isTokenBased: s.isTokenBased, inputTokensM: s.inputTokensM,
+            outputTokensM: s.outputTokensM, priceInputPer1m: s.priceInputPer1m,
+            priceOutputPer1m: s.priceOutputPer1m,
+          })));
+        } catch { /* ignore bad JSON */ }
+        sessionStorage.removeItem("guestTemplate");
+
+        // Load multiplier defaults if stored
+        const mult = sessionStorage.getItem("guestMultiplier");
+        if (mult) {
+          try {
+            const m = JSON.parse(mult) as { label: string; base: number; target: number };
+            setUnitLabel(m.label);
+            setBaseVolume(m.base);
+            setTargetVolume(m.target);
+          } catch { /* ignore */ }
+          sessionStorage.removeItem("guestMultiplier");
+        }
+      }
+
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -438,6 +486,90 @@ function GuestProjectPageInner() {
                 <p className="mt-4 text-xs text-indigo-400/60 text-center">Select plans to see the total</p>
               )}
             </div>
+
+            {/* Cost Multiplier */}
+            {selected.length > 0 && total > 0 && (
+              <div className="mt-4 rounded-xl bg-zinc-900 border border-zinc-800 p-4">
+                <div className="flex items-center gap-2 mb-3 text-zinc-400">
+                  <Activity size={13} strokeWidth={1.75} />
+                  <span className="text-xs font-semibold uppercase tracking-wider">Cost Multiplier</span>
+                </div>
+                <div className="mb-3">
+                  <label className="block text-[10px] text-zinc-500 mb-1">What are you processing?</label>
+                  <input value={unitLabel} onChange={e => setUnitLabel(e.target.value)}
+                    placeholder="e.g. resume, document, image…"
+                    className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-xs text-zinc-200 placeholder-zinc-600 outline-none focus:border-indigo-500" />
+                </div>
+                <div className="mb-3">
+                  <label className="block text-[10px] text-zinc-500 mb-1">Current estimate based on</label>
+                  <div className="flex items-center gap-2">
+                    <input type="number" min="1"
+                      value={baseVolume === 0 ? "" : baseVolume}
+                      onChange={e => setBaseVolume(e.target.value === "" ? "" : Math.max(1, Number(e.target.value)))}
+                      placeholder="e.g. 1000"
+                      className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-xs font-mono text-zinc-200 placeholder-zinc-600 outline-none focus:border-indigo-500" />
+                    <span className="text-[10px] text-zinc-500 shrink-0">/mo</span>
+                  </div>
+                </div>
+                {unitLabel.trim() && baseVolume ? (
+                  <>
+                    <div className="mb-4">
+                      <label className="block text-[10px] text-zinc-500 mb-1">Scale to</label>
+                      <div className="flex items-center gap-2">
+                        <input type="number" min="1"
+                          value={targetVolume}
+                          onChange={e => setTargetVolume(e.target.value === "" ? "" : Math.max(1, Number(e.target.value)))}
+                          placeholder="e.g. 5000"
+                          className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1.5 text-xs font-mono text-zinc-200 placeholder-zinc-600 outline-none focus:border-indigo-500" />
+                        <span className="text-[10px] text-zinc-500 shrink-0">/mo</span>
+                      </div>
+                    </div>
+                    {(() => {
+                      const base = Number(baseVolume);
+                      const costPerUnit = total / base;
+                      const target = Number(targetVolume);
+                      const targetCost = target ? costPerUnit * target : null;
+                      const delta = targetCost !== null ? targetCost - total : null;
+                      const multiplier = target ? target / base : null;
+                      const isUp = delta !== null && delta > 0;
+                      return (
+                        <div className="space-y-2 pt-3 border-t border-zinc-800">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] text-zinc-500">Cost per {unitLabel}</span>
+                            <span className="text-xs font-mono text-zinc-300">{fmtUSD(costPerUnit)}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] text-zinc-500">{base.toLocaleString()} {unitLabel}s/mo</span>
+                            <span className="text-xs font-mono text-indigo-300">{fmtUSD(total)}/mo</span>
+                          </div>
+                          {targetCost !== null && delta !== null && multiplier !== null && (
+                            <>
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] text-zinc-500">{target.toLocaleString()} {unitLabel}s/mo</span>
+                                <span className="text-xs font-mono text-zinc-300">{fmtUSD(targetCost)}/mo</span>
+                              </div>
+                              <div className="flex items-center justify-between rounded-lg px-2.5 py-2 mt-1"
+                                style={{ background: isUp ? "#1c0a0a" : "#052e16", border: `1px solid ${isUp ? "#7f1d1d" : "#14532d"}` }}>
+                                <span className="text-[10px]" style={{ color: isUp ? "#f87171" : "#86efac" }}>
+                                  {multiplier.toFixed(1)}× volume
+                                </span>
+                                <span className="text-xs font-mono font-semibold" style={{ color: isUp ? "#f87171" : "#86efac" }}>
+                                  {isUp ? "+" : ""}{fmtUSD(delta)}/mo
+                                </span>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </>
+                ) : (
+                  <p className="text-[10px] text-zinc-600 text-center py-2">
+                    Fill in what you&apos;re processing and the volume to see cost projections
+                  </p>
+                )}
+              </div>
+            )}
           </aside>
         </div>
       </div>

@@ -34,6 +34,7 @@ interface Props {
   initialEdges?: Edge[];
   initialDir?: Direction;
   readOnly?: boolean;
+  onChange?: () => void;
 }
 
 export interface ArchDiagramHandle {
@@ -372,7 +373,7 @@ function EdgePanel({ edge, onUpdate, onDelete, onClose }: EdgePanelProps) {
 
 /* ─── main component ─────────────────────────────────────────── */
 const ArchDiagram = forwardRef<ArchDiagramHandle, Props>(function ArchDiagram(
-  { selected, initialEdges, initialDir, readOnly = false }, ref
+  { selected, initialEdges, initialDir, readOnly = false, onChange }, ref
 ) {
   const [dir, setDir] = useState<Direction>(initialDir ?? "LR");
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
@@ -532,7 +533,7 @@ const ArchDiagram = forwardRef<ArchDiagramHandle, Props>(function ArchDiagram(
   };
 
   const onConnect = useCallback(
-    (connection: Connection) =>
+    (connection: Connection) => {
       setEdges((eds) =>
         addEdge({
           ...connection,
@@ -541,8 +542,10 @@ const ArchDiagram = forwardRef<ArchDiagramHandle, Props>(function ArchDiagram(
           style: { stroke: "#6366f1", strokeWidth: 1.5 },
           markerEnd: { type: MarkerType.ArrowClosed, color: "#6366f1" },
         }, eds)
-      ),
-    [setEdges]
+      );
+      onChange?.();
+    },
+    [setEdges, onChange]
   );
 
   const onEdgeClick = useCallback((_: React.MouseEvent, edge: Edge) => {
@@ -556,11 +559,13 @@ const ArchDiagram = forwardRef<ArchDiagramHandle, Props>(function ArchDiagram(
       eds.map((e) => (e.id === id ? { ...e, ...patch } : e))
     );
     setSelectedEdge((prev) => prev && prev.id === id ? { ...prev, ...patch } : prev);
-  }, [setEdges]);
+    onChange?.();
+  }, [setEdges, onChange]);
 
   const deleteEdge = useCallback((id: string) => {
     setEdges((eds) => eds.filter((e) => e.id !== id));
-  }, [setEdges]);
+    onChange?.();
+  }, [setEdges, onChange]);
 
   // Keep selectedEdge in sync with edges state
   useEffect(() => {
@@ -639,6 +644,7 @@ const ArchDiagram = forwardRef<ArchDiagramHandle, Props>(function ArchDiagram(
           onConnect={readOnly ? undefined : onConnect}
           onEdgeClick={readOnly ? undefined : onEdgeClick}
           onPaneClick={onPaneClick}
+          onNodeDragStop={readOnly ? undefined : () => onChange?.()}
           nodeTypes={nodeTypes}
           nodesDraggable={!readOnly}
           nodesConnectable={!readOnly}

@@ -177,6 +177,7 @@ export async function GET() {
       pool.query(`
         SELECT
           t.id, t.name, t.description, t.icon, t.category,
+          t.multiplier_label, t.multiplier_base_volume, t.multiplier_target_volume,
           COALESCE(
             json_agg(
               json_build_object(
